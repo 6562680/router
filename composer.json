@@ -1,0 +1,36 @@
+{
+  "type": "library",
+  "license": "MIT",
+  
+  "name": "gzhegow/router",
+  "description": "Router",
+  
+  "authors": [
+    {
+      "name": "gzhegow",
+      "email": "6562680@gmail.com"
+    }
+  ],
+  
+  "require": {
+    "php": "^7.3",
+    
+    "psr/container": "^2.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "~9.0",
+    
+    "symfony/var-dumper": "~5.0"
+  },
+  
+  "autoload": {
+    "psr-4": {
+      "Gzhegow\\Router\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Gzhegow\\Router\\Tests\\": "tests/src"
+    }
+  }
+}
