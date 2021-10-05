@@ -2,12 +2,11 @@
 
 namespace Gzhegow\Router;
 
-
 use Gzhegow\Router\Domain\Route\RouteCollection;
 
 
 /**
- * RouterCache
+ * RouterCacheInterface
  */
 interface RouterCacheInterface
 {
@@ -19,4 +18,9 @@ interface RouterCacheInterface
      * @return RouteCollection
      */
     public function remember(\Closure $func, int $ttl = null, int $key = null) : RouteCollection;
+
+    /**
+     * @return static
+     */
+    public function clear();
 }

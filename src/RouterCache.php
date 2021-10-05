@@ -31,6 +31,19 @@ class RouterCache implements RouterCacheInterface
 
 
     /**
+     * @return static
+     */
+    public function clear()
+    {
+        if ($this->cache) {
+            $this->cache->clear();
+        }
+
+        return $this;
+    }
+
+
+    /**
      * @param \Closure $func
      * @param null|int $ttl
      * @param null|int $key
@@ -58,7 +71,6 @@ class RouterCache implements RouterCacheInterface
 
         return $routeCollection;
     }
-
 
     /**
      * @param \Closure $func

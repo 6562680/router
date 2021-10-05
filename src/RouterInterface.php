@@ -44,6 +44,12 @@ interface RouterInterface
 
 
     /**
+     * @return RouterCacheInterface
+     */
+    public function getRouterCache() : RouterCacheInterface;
+
+
+    /**
      * @param mixed $source
      *
      * @return static

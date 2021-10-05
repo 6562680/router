@@ -163,6 +163,15 @@ class Router implements RouterInterface
 
 
     /**
+     * @return RouterCacheInterface
+     */
+    public function getRouterCache() : RouterCacheInterface
+    {
+        return $this->routerContainer->getRouterCache();
+    }
+
+
+    /**
      * @param \Closure    $closure
      * @param null|int    $ttl
      * @param null|string $key
