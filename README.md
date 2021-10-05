@@ -57,12 +57,11 @@ $router->remember(function () use ($router) {
         ->namespace('Gzhegow\Router\Tests\Classes')
         // setting cors headers for all routes in the group
         ->cors(function (CorsBuilder $cors) {
-            
             return $cors
-            ->allowCredentials(true)
-            ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
-            ->allowHeaders([ 'Authorization', 'X-(.+)' ])
-            ->exposeHeaders([ 'X-(.+)' ]);
+              ->allowCredentials(true)
+              ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
+              ->allowHeaders([ 'Authorization', 'X-(.+)' ])
+              ->exposeHeaders([ 'X-(.+)' ]);
         })
         // using loader to get routes, for example: \Closure function or filepath or directory path
         ->group(function () use ($manager) {
