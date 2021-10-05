@@ -46,48 +46,46 @@ $router
     ->addPattern('id', '[0-9]+')
     ->addPattern('controller', '(?:[^\/]+\/)+(?=[^\/]+)')
     ->addPattern('action', '[^\/]+(?=|$)');
+    
+$manager = ( new BlueprintManager() )
+    // setting namespace for all route actions that are strings and not callables
+    ->namespace('Gzhegow\Router\Tests\Classes')
+    // setting cors headers for all routes in the group
+    ->cors(function (CorsBuilder $cors) {
+        return $cors
+          ->allowCredentials(true)
+          ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
+          ->allowHeaders([ 'Authorization', 'X-(.+)' ])
+          ->exposeHeaders([ 'X-(.+)' ]);
+    })
+    // using loader to get routes, for example: \Closure function or filepath or directory path
+    ->group(function () use ($manager) {
+        $manager
+            ->group(function () use ($manager) {
+                $manager->get('/login', 'TestUserController@login')->name('login');
+                $manager->post('/login', 'TestUserController@loginPost')->name('loginPost');
+            });
+
+        $manager
+            // adding name prefix to all routes in the group
+            ->name('users.')
+            // adding endpoint prefix to all routes in the group
+            ->endpoint('/users')
+            // adding middlewares for all routes in the group
+            ->middlewares([ '@api' ])
+            ->group(function () use ($manager) {
+                $manager->get('/', 'TestUserController@index')->name('index');
+                $manager->post('/', 'TestUserController@post')->name('post');
+
+                $manager->get('/{id}', 'TestUserController@get')->name('get');
+                $manager->put('/{id}', 'TestUserController@put')->name('put');
+                $manager->delete('/{id}', 'TestUserController@delete')->name('delete');
+            });
+    });    
 
 // using cache, if provided in Configuration
 // otherwise won't remember
-$router->remember(function () use ($router) {
-    $manager = ( new BlueprintManager() );
-
-    $manager
-        // setting namespace for all route actions that are strings and not callables
-        ->namespace('Gzhegow\Router\Tests\Classes')
-        // setting cors headers for all routes in the group
-        ->cors(function (CorsBuilder $cors) {
-            return $cors
-              ->allowCredentials(true)
-              ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
-              ->allowHeaders([ 'Authorization', 'X-(.+)' ])
-              ->exposeHeaders([ 'X-(.+)' ]);
-        })
-        // using loader to get routes, for example: \Closure function or filepath or directory path
-        ->group(function () use ($manager) {
-            $manager
-                ->group(function () use ($manager) {
-                    $manager->get('/login', 'TestUserController@login')->name('login');
-                    $manager->post('/login', 'TestUserController@loginPost')->name('loginPost');
-                });
-
-            $manager
-                // adding name prefix to all routes in the group
-                ->name('users.')
-                // adding endpoint prefix to all routes in the group
-                ->endpoint('/users')
-                // adding middlewares for all routes in the group
-                ->middlewares([ '@api' ])
-                ->group(function () use ($manager) {
-                    $manager->get('/', 'TestUserController@index')->name('index');
-                    $manager->post('/', 'TestUserController@post')->name('post');
-
-                    $manager->get('/{id}', 'TestUserController@get')->name('get');
-                    $manager->put('/{id}', 'TestUserController@put')->name('put');
-                    $manager->delete('/{id}', 'TestUserController@delete')->name('delete');
-                });
-        });
-
+$router->remember(function () use ($router, $manager) {
     // using loader to load our custom manager, you can write your own manager for that
     // also you can write annotation reader to read controller classes directly
     $router->load($manager);
