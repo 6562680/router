@@ -5,7 +5,12 @@ Well polymorphed router library
 ## How to use
 
 ```php
-use Gzhegow\Router\Router;use Gzhegow\Router\Domain\Cors\CorsBuilder;use Gzhegow\Router\Tests\Classes\TestMiddleware;use Gzhegow\Router\Domain\Blueprint\BlueprintManager;use Gzhegow\Router\Domain\Configuration\Configuration;use Gzhegow\Router\Domain\Route\Specification\HttpRouteSpecification;
+use Gzhegow\Router\Router;
+use Gzhegow\Router\Domain\Cors\CorsBuilder;
+use Gzhegow\Router\Tests\Classes\TestMiddleware;
+use Gzhegow\Router\Domain\Blueprint\BlueprintManager;
+use Gzhegow\Router\Domain\Configuration\Configuration;
+use Gzhegow\Router\Domain\Route\Specification\HttpRouteSpecification;
 
 
 require_once __DIR__ . '/vendor/autoload.php';
