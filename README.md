@@ -17,13 +17,14 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 
 $configuration = ( new Configuration() )
-    ->setCache(null)
-    ->setContainer(null)
-    ->setRouterFactory(null)
-    ->setRouteCompiler(null)
-    ->setRouteLoader(null)
-    ->setActionProcessor(null)
-    ->setCorsMiddleware(null);
+    // ->setCache(null) // Psr\SimpleCache\CacheInterface
+    // ->setContainer(null) // \Psr\Container\ContainerInterface
+    // ->setRouterFactory(null) // \Gzhegow\Router\RouterFactoryInterface
+    // ->setRouteCompiler(null) // \Gzhegow\Router\Service\RouteCompiler\RouteCompilerInterface
+    // ->setRouteLoader(null) // \Gzhegow\Router\Service\RouteLoader\RouteLoaderInterface
+    // ->setActionProcessor(null) // \Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface
+    // ->setCorsMiddleware(null) // mixed
+;
 
 $router = new Router($configuration);
 
