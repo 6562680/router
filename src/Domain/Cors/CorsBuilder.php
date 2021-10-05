@@ -148,13 +148,17 @@ class CorsBuilder
                 : [ $allowOrigins ];
 
             foreach ( $allowOrigins as $allowOrigin ) {
-                if (null === ( $value = Helper::filterRegexShort($allowOrigin) )) {
+                if (! Helper::filterRegexShort($allowOrigin)) {
+                    $allowOrigin = preg_quote($allowOrigin, '/');
+                }
+
+                if (false === @preg_match('/' . $allowOrigin . '/', '')) {
                     throw new InvalidArgumentException(
-                        [ 'Invalid Origin: %s', $allowOrigin ]
+                        [ 'Invalid AllowOrigin / Regex: %s', $allowOrigin ]
                     );
                 }
 
-                $this->allowOrigins[ $value ] = true;
+                $this->allowOrigins[ $allowOrigin ] = true;
             }
         }
 
@@ -179,6 +183,16 @@ class CorsBuilder
 
             foreach ( $allowHeaders as $allowHeader ) {
                 $value = strtolower($allowHeader);
+
+                if (! Helper::filterRegexShort($value)) {
+                    $value = preg_quote($value, '/');
+                }
+
+                if (false === @preg_match('/' . $value . '/', '')) {
+                    throw new InvalidArgumentException(
+                        [ 'Invalid AllowHeader / Regex: %s', $value ]
+                    );
+                }
 
                 if (isset(static::$publicHeaders[ $value ])) {
                     continue;
@@ -208,6 +222,16 @@ class CorsBuilder
 
             foreach ( $exposeHeaders as $exposeHeader ) {
                 $value = strtolower($exposeHeader);
+
+                if (! Helper::filterRegexShort($value)) {
+                    $value = preg_quote($value, '/');
+                }
+
+                if (false === @preg_match('/' . $value . '/', '')) {
+                    throw new InvalidArgumentException(
+                        [ 'Invalid ExposeHeader / Regex: %s', $value ]
+                    );
+                }
 
                 if (isset(static::$publicHeaders[ $value ])) {
                     continue;

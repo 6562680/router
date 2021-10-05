@@ -72,19 +72,26 @@ class HttpRouteSpecification implements RouteSpectificationInterface
             return false;
         }
 
-        if (! preg_match($route->getEndpoint(), $this->urlAddress, $matches)) {
+        $regex = $route->getEndpointRegex();
+        $endpoint = $route->getEndpoint();
+
+        $isMatch = false
+            || ( $regex && preg_match($regex, $this->urlAddress, $matches) )
+            || ( $endpoint && $endpoint === $this->urlAddress );
+
+        if (! $isMatch) {
             return false;
         }
 
-        $bindings = $route->getBindings();
-
+        $bindings = [];
+        $matches = $matches ?? [];
         foreach ( $matches as $idx => $value ) {
             if (is_string($idx)) {
                 $bindings[ $idx ] = $value;
             }
         }
 
-        $route->setBindings($bindings);
+        $route->addBindings($bindings);
 
         return true;
     }
@@ -97,7 +104,7 @@ class HttpRouteSpecification implements RouteSpectificationInterface
      */
     public function urlAddress(string $urlAddress)
     {
-        $urlAddress = ltrim(trim($urlAddress), '/');
+        $urlAddress = '/' . ltrim(trim($urlAddress), '/');
 
         $this->urlAddress = $urlAddress;
 

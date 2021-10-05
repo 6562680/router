@@ -61,9 +61,12 @@ $router->remember(function () use ($router) {
 
     $manager
         ->namespace('Gzhegow\Router\Tests\Classes')
-        ->cors(function (CorsBuilder $corsBuilder) {
-            $corsBuilder
-                ->maxAge(3600);
+        ->cors(function (CorsBuilder $cors) {
+            $cors
+                ->allowCredentials(true)
+                ->allowOrigins([ 'https\:\/\/(.+)\.test\.loc' ])
+                ->allowHeaders([ 'Authorization', 'X-(.+)' ])
+                ->exposeHeaders([ 'X-(.+)' ]);
         })
         ->group(function () use ($manager) {
             $manager
@@ -98,6 +101,8 @@ $routeSpecification = ( new HttpRouteSpecification() )
 
 $route = $router->match($routeSpecification);
 
+dd($route);
+dd($router->getRouteCollection());
 var_export($route);
 
 /**

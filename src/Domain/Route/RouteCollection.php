@@ -143,20 +143,19 @@ class RouteCollection
      */
     public function all(RouteSpectificationInterface $routeSpecification = null, int $limit = null, int $offset = null) : array
     {
+        $limit = $limit ?? INF;
         $offset = $offset ?? 0;
 
         $matches = [];
 
         foreach ( $this->routes as $idx => $route ) {
-            if ($offset-- > 0) continue;
+            if (! $routeSpecification || $routeSpecification->isMatch($route)) {
+                if ($offset-- > 0) continue;
 
-            if (! $routeSpecification
-                || $routeSpecification->isMatch($route)
-            ) {
                 $matches[ $idx ] = $route;
-            }
 
-            if (--$limit <= 0) break;
+                if (--$limit <= 0) break;
+            }
         }
 
         return $matches;

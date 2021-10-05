@@ -4,5 +4,6 @@
 .phpunit.*
 
 composer.lock
+test.php
 
 !.gitkeep

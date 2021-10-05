@@ -4,6 +4,7 @@
 namespace Gzhegow\Router\Domain\Route;
 
 use Gzhegow\Router\Domain\Cors\Cors;
+use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 
 
 /**
@@ -76,7 +77,6 @@ class Route
         $this->action = $action;
 
         $this->endpoint = $endpoint;
-        $this->endpointRegex = $endpoint;
 
         $this->name = $name;
         $this->description = $description;
@@ -231,6 +231,14 @@ class Route
      */
     public function setEndpointRegex(?string $endpointRegex)
     {
+        if (null !== $endpointRegex) {
+            if (false === @preg_match($endpointRegex, '')) {
+                throw new InvalidArgumentException(
+                    [ 'Bad regular expression: %s', $endpointRegex ]
+                );
+            }
+        }
+
         $this->endpointRegex = $endpointRegex;
 
         return $this;
