@@ -59,7 +59,7 @@ $router->remember(function () use ($router) {
             
             return $cors
             ->allowCredentials(true)
-            ->allowOrigins([ 'https://test\.(.+)\.loc' ])
+            ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
             ->allowHeaders([ 'Authorization', 'X-(.+)' ])
             ->exposeHeaders([ 'X-(.+)' ]);
         })
