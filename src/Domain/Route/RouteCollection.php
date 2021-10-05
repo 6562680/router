@@ -4,8 +4,7 @@
 namespace Gzhegow\Router\Domain\Route;
 
 use Gzhegow\Router\Exceptions\Runtime\OverflowException;
-use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
-use Gzhegow\Router\Domain\Specification\SpecificationInterface;
+use Gzhegow\Router\Domain\Route\Specification\RouteSpectificationInterface;
 
 
 /**
@@ -17,21 +16,38 @@ class RouteCollection
      * @var Route[]
      */
     protected $routes = [];
-
     /**
-     * @var array
+     * @var bool[][]
      */
-    protected $index = [
-        'method'   => [],
-        'endpoint' => [],
-    ];
-    /**
-     * @var array
-     */
-    protected $uniq = [
+    protected $routesUniq = [
         'method.endpoint' => [],
         'name'            => [],
     ];
+
+
+    /**
+     * @return array
+     */
+    public function __serialize() : array
+    {
+        return [
+            'routes'     => $this->routes,
+            'routesUniq' => $this->routesUniq,
+        ];
+    }
+
+    /**
+     * @param array $data
+     */
+    public function __unserialize(array $data) : void
+    {
+        $this->routes = $data[ 'routes' ] ?? [];
+        $this->routesUniq = $data[ 'routesUniq' ]
+            ?? [
+                'method.endpoint' => [],
+                'name'            => [],
+            ];
+    }
 
 
     /**
@@ -44,52 +60,18 @@ class RouteCollection
 
 
     /**
-     * @param string|Route|mixed $endpoint
-     *
-     * @return string[]
-     */
-    public function getMethodsForEndpoint($endpoint) : array
-    {
-        $endpoint = null
-            ?? ( $endpoint instanceof Route ? $endpoint->getEndpoint() : null )
-            ?? $endpoint;
-
-        if (! is_string($endpoint)) {
-            throw new InvalidArgumentException(
-                [ 'Invalid endpoint: %s', $endpoint ]
-            );
-        }
-
-        $methods = [];
-        $indexes = $this->index[ 'endpoint' ][ $endpoint ] ?? [];
-        foreach ( $indexes as $idx => $bool ) {
-            $methods[ $this->routes[ $idx ]->getMethod() ] = true;
-        }
-
-        $result = array_keys($methods);
-
-        return $result;
-    }
-
-
-    /**
      * @param Route|Route[] $routes
      *
      * @return static
      */
     public function setRoutes($routes)
     {
-        $routes = is_array($routes)
-            ? $routes
-            : [ $routes ];
-
         $this->routes = [];
 
         $this->addRoutes($routes);
 
         return $this;
     }
-
 
     /**
      * @param Route|Route[] $routes
@@ -98,7 +80,7 @@ class RouteCollection
      */
     public function addRoutes($routes)
     {
-        $routes = is_array($routes)
+        $routes = is_iterable($routes)
             ? $routes
             : [ $routes ];
 
@@ -108,7 +90,6 @@ class RouteCollection
 
         return $this;
     }
-
 
     /**
      * @param Route $route
@@ -123,19 +104,17 @@ class RouteCollection
 
         $uniqMethodEndpoint = $routeMethod . '.' . $routeEndpoint;
         $uniqName = $routeName;
-        $indexMethod = $routeMethod;
-        $indexEndpoint = $routeEndpoint;
 
-        if (isset($this->uniq[ 'method.endpoint' ][ $uniqMethodEndpoint ])) {
+        if (isset($this->routesUniq[ 'method.endpoint' ][ $uniqMethodEndpoint ])) {
             throw new OverflowException(
-                [ 'Route is already exists: %s', $uniqMethodEndpoint ]
+                [ 'Blueprint is already exists by Method/Endpoint: %s', $uniqMethodEndpoint ]
             );
         }
 
         if (null !== $uniqName) {
-            if (isset($this->uniq[ 'name' ][ $uniqName ])) {
+            if (isset($this->routesUniq[ 'name' ][ $uniqName ])) {
                 throw new OverflowException(
-                    [ 'Route name should be unique: %s', $uniqName ]
+                    [ 'Blueprint is already exists by Name: %s', $uniqName ]
                 );
             }
         }
@@ -145,13 +124,10 @@ class RouteCollection
         end($this->routes);
         $idx = key($this->routes);
 
-        $this->uniq[ 'method.endpoint' ][ $uniqMethodEndpoint ] = $idx;
+        $this->routesUniq[ 'method.endpoint' ][ $uniqMethodEndpoint ] = $idx;
 
-        $this->index[ 'method' ][ $indexMethod ][ $idx ] = true;
-        $this->index[ 'endpoint' ][ $indexEndpoint ][ $idx ] = true;
-
-        if (isset($uniqName)) {
-            $this->uniq[ 'name' ][ $uniqName ] = $idx;
+        if (null !== $uniqName) {
+            $this->routesUniq[ 'name' ][ $uniqName ] = $idx;
         }
 
         return $this;
@@ -159,18 +135,47 @@ class RouteCollection
 
 
     /**
-     * @param SpecificationInterface $routeSpec
+     * @param null|RouteSpectificationInterface $routeSpecification
+     * @param null|int                          $limit
+     * @param null|int                          $offset
+     *
+     * @return Route[]
+     */
+    public function all(RouteSpectificationInterface $routeSpecification = null, int $limit = null, int $offset = null) : array
+    {
+        $offset = $offset ?? 0;
+
+        $matches = [];
+
+        foreach ( $this->routes as $idx => $route ) {
+            if ($offset-- > 0) continue;
+
+            if (! $routeSpecification
+                || $routeSpecification->isMatch($route)
+            ) {
+                $matches[ $idx ] = $route;
+            }
+
+            if (--$limit <= 0) break;
+        }
+
+        return $matches;
+    }
+
+    /**
+     * @param null|RouteSpectificationInterface $routeSpecification
+     * @param null|int                          $offset
      *
      * @return null|Route
      */
-    public function findBySpec(SpecificationInterface $routeSpec) : ?Route
+    public function first(RouteSpectificationInterface $routeSpecification = null, int $offset = null) : ?Route
     {
-        foreach ( $this->routes as $route ) {
-            if ($routeSpec->isMatch($route)) {
-                return $route;
-            }
-        }
+        $items = $this->all($routeSpecification, 1, $offset);
 
-        return null;
+        $match = null !== key($items)
+            ? reset($items)
+            : null;
+
+        return $match;
     }
 }

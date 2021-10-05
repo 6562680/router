@@ -4,7 +4,7 @@ namespace Gzhegow\Router\Domain\Handler\Middleware;
 
 use Gzhegow\Router\Domain\Handler\TapHandler;
 use Gzhegow\Router\Domain\Handler\HandlerInterface;
-use Gzhegow\Router\Domain\Processor\Middleware\MiddlewareProcessorInterface;
+use Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface;
 
 
 /**
@@ -16,10 +16,11 @@ class GenericMiddleware implements MiddlewareInterface
      * @var string|object|callable|MiddlewareInterface|mixed
      */
     protected $middleware;
+
     /**
-     * @var MiddlewareProcessorInterface
+     * @var ActionProcessorInterface
      */
-    protected $middlewareProcessor;
+    protected $actionProcessor;
 
     /**
      * @var HandlerInterface
@@ -30,14 +31,15 @@ class GenericMiddleware implements MiddlewareInterface
     /**
      * Constructor
      *
-     * @param string|object|callable|mixed $middleware
+     * @param string|object|callable|MiddlewareInterface|mixed $middleware
      *
-     * @param MiddlewareProcessorInterface $middlewareProcessor
+     * @param ActionProcessorInterface                         $actionProcessor
      */
-    public function __construct($middleware, MiddlewareProcessorInterface $middlewareProcessor)
+    public function __construct($middleware, ActionProcessorInterface $actionProcessor)
     {
         $this->middleware = $middleware;
-        $this->middlewareProcessor = $middlewareProcessor;
+
+        $this->actionProcessor = $actionProcessor;
     }
 
 
@@ -52,7 +54,7 @@ class GenericMiddleware implements MiddlewareInterface
         $next = $this->next
             ?? new TapHandler();
 
-        $result = $this->middlewareProcessor->processMiddleware($this->middleware, $next, $payload, ...$arguments);
+        $result = $this->actionProcessor->processAction($this->middleware, $next, $payload, ...$arguments);
 
         return $result;
     }

@@ -3,8 +3,7 @@
 
 namespace Gzhegow\Router\Domain\Configuration;
 
-use Gzhegow\Router\Utils;
-use Gzhegow\Router\Exceptions\Runtime\OverflowException;
+use Gzhegow\Router\Vendor\Helper;
 use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 
 
@@ -16,7 +15,12 @@ class PatternCollection
     /**
      * @var array
      */
-    protected $patterns = [];
+    protected $patterns = [
+        '*'          => '.+',
+        'id'         => '[0-9]+',
+        'controller' => '(?:[^\/]+\/)+(?=[^\/]+)',
+        'action'     => '[^\/]+(?=|$)',
+    ];
 
 
     /**
@@ -45,7 +49,6 @@ class PatternCollection
 
         return $this;
     }
-
 
     /**
      * @param string|string[] $patterns
@@ -76,12 +79,6 @@ class PatternCollection
         if (null === $this->filterPatternName($patternName)) {
             throw new InvalidArgumentException(
                 [ 'Invalid PatternName: %s', $patternName ]
-            );
-        }
-
-        if (isset($this->patterns[ $patternName ])) {
-            throw new OverflowException(
-                [ 'Pattern is already exists: %s', $patternName ]
             );
         }
 
@@ -118,7 +115,6 @@ class PatternCollection
      */
     public function filterPatternRegex($patternRegex) : ?string
     {
-        return null
-            ?? Utils::filterRegexShort($patternRegex);
+        return Helper::filterRegexShort($patternRegex);
     }
 }

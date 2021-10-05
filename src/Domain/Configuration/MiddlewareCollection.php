@@ -5,7 +5,7 @@ namespace Gzhegow\Router\Domain\Configuration;
 
 use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 use Gzhegow\Router\Domain\Handler\Middleware\MiddlewareInterface;
-use Gzhegow\Router\Domain\Processor\Middleware\MiddlewareProcessorInterface;
+use Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface;
 
 
 /**
@@ -14,88 +14,190 @@ use Gzhegow\Router\Domain\Processor\Middleware\MiddlewareProcessorInterface;
 class MiddlewareCollection
 {
     /**
-     * @var MiddlewareProcessorInterface
+     * @var ActionProcessorInterface
      */
-    protected $middlewareProcessor;
+    protected $actionProcessor;
 
     /**
      * @var array
      */
-    protected $middlewares = [];
+    protected $middlewareAliases = [];
+    /**
+     * @var array
+     */
+    protected $middlewareGroups = [];
 
 
     /**
      * Constructor
      *
-     * @param MiddlewareProcessorInterface $middlewareProcessor
+     * @param ActionProcessorInterface $actionProcessor
      */
-    public function __construct(MiddlewareProcessorInterface $middlewareProcessor)
+    public function __construct(ActionProcessorInterface $actionProcessor)
     {
-        $this->middlewareProcessor = $middlewareProcessor;
+        $this->actionProcessor = $actionProcessor;
     }
 
 
     /**
      * @return string[]
      */
-    public function getMiddlewares() : array
+    public function getMiddlewareGroups() : array
     {
-        return $this->middlewares;
+        return $this->middlewareGroups;
     }
 
     /**
-     * @param string $middleware
+     * @param string $middlewareGroup
+     *
+     * @return array
+     */
+    public function getMiddlewareGroup(string $middlewareGroup) : array
+    {
+        return $this->middlewareGroups[ $middlewareGroup ];
+    }
+
+
+    /**
+     * @return string[]
+     */
+    public function getMiddlewareAliases() : array
+    {
+        return $this->middlewareAliases;
+    }
+
+    /**
+     * @param string $middlewareAlias
      *
      * @return string
      */
-    public function getMiddleware(string $middleware) : string
+    public function getMiddlewareAlias(string $middlewareAlias) : string
     {
-        return $this->middlewares[ $middleware ];
+        return $this->middlewareAliases[ $middlewareAlias ];
     }
 
 
     /**
-     * @param string $middleware
+     * @param string $middlewareGroup
+     *
+     * @return null|array
+     */
+    public function hasMiddlewareGroup(string $middlewareGroup) : ?array
+    {
+        return $this->middlewareGroups[ $middlewareGroup ] ?? null;
+    }
+
+    /**
+     * @param string $middlewareAlias
      *
      * @return null|string
      */
-    public function hasMiddleware(string $middleware) : ?string
+    public function hasMiddlewareAlias(string $middlewareAlias) : ?string
     {
-        return $this->middlewares[ $middleware ] ?? null;
+        return $this->middlewareAliases[ $middlewareAlias ] ?? null;
     }
 
 
     /**
-     * @param string|object|callable|MiddlewareInterface|array $middlewares
+     * @param MiddlewareInterface|mixed|iterable $middlewareGroups
      *
      * @return static
      */
-    public function setMiddlewares($middlewares)
+    public function setMiddlewareGroups($middlewareGroups)
     {
-        $middlewares = is_array($middlewares)
-            ? $middlewares
-            : [ $middlewares ];
+        if (null === $middlewareGroups) {
+            $this->middlewareGroups = [];
 
-        $this->middlewares = [];
-
-        $this->addMiddlewares($middlewares);
+        } else {
+            $this->addMiddlewareGroups($middlewareGroups);
+        }
 
         return $this;
     }
 
     /**
-     * @param string|object|callable|MiddlewareInterface|array $middlewares
+     * @param MiddlewareInterface|mixed|iterable $middlewareGroups
      *
      * @return static
      */
-    public function addMiddlewares($middlewares)
+    public function addMiddlewareGroups($middlewareGroups)
     {
-        $middlewares = is_array($middlewares)
+        $middlewareGroups = is_iterable($middlewareGroups)
+            ? $middlewareGroups
+            : [ $middlewareGroups ];
+
+        foreach ( $middlewareGroups as $middlewareGroupName => $middlewares ) {
+            $this->addMiddlewareGroup($middlewareGroupName, $middlewares);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param MiddlewareInterface|mixed|iterable $middlewares
+     *
+     * @return static
+     */
+    public function addMiddlewareGroup($middlewareGroupName, $middlewares)
+    {
+        if (null === $this->filterMiddlewareGroupName($middlewareGroupName)) {
+            throw new InvalidArgumentException(
+                [ 'Invalid MiddlewareGroupName: %s', $middlewareGroupName ]
+            );
+        }
+
+        $middlewares = is_iterable($middlewares)
             ? $middlewares
             : [ $middlewares ];
 
-        foreach ( $middlewares as $middlewareName => $middleware ) {
-            $this->addMiddleware($middlewareName, $middleware);
+        foreach ( $middlewares as $middleware ) {
+            $middleware = null
+                ?? $this->hasMiddlewareAlias($middleware)
+                ?? $this->filterMiddleware($middleware);
+
+            if (null === $middleware) {
+                throw new InvalidArgumentException(
+                    [ 'Unsupported Middleware: %s', $middleware ]
+                );
+            }
+        }
+
+        $this->middlewareGroups[ $middlewareGroupName ] = $middlewares;
+
+        return $this;
+    }
+
+
+    /**
+     * @param MiddlewareInterface|mixed|iterable $middlewareAliases
+     *
+     * @return static
+     */
+    public function setMiddlewareAliases($middlewareAliases)
+    {
+        if (null === $middlewareAliases) {
+            $this->middlewareAliases = [];
+
+        } else {
+            $this->addMiddlewareAliases($middlewareAliases);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param MiddlewareInterface|mixed|iterable $middlewareAliases
+     *
+     * @return static
+     */
+    public function addMiddlewareAliases($middlewareAliases)
+    {
+        $middlewareAliases = is_iterable($middlewareAliases)
+            ? $middlewareAliases
+            : [ $middlewareAliases ];
+
+        foreach ( $middlewareAliases as $middlewareName => $middleware ) {
+            $this->addMiddlewareAlias($middlewareName, $middleware);
         }
 
         return $this;
@@ -106,38 +208,72 @@ class MiddlewareCollection
      *
      * @return static
      */
-    public function addMiddleware($middlewareName, $middleware)
+    public function addMiddlewareAlias($middlewareAlias, $middleware)
     {
-        if (null === $this->filterMiddlewareName($middlewareName)) {
+        if (null === $this->filterMiddlewareAlias($middlewareAlias)) {
             throw new InvalidArgumentException(
-                [ 'Invalid MiddlewareName: %s', $middlewareName ]
+                [ 'Invalid Middleware Name: %s', $middlewareAlias ]
             );
         }
 
-        if (! $this->middlewareProcessor->supportsMiddleware($middleware)) {
+        if (null === $this->filterMiddleware($middleware)) {
             throw new InvalidArgumentException(
                 [ 'Invalid Middleware: %s', $middleware ]
             );
         }
 
-        $this->middlewares[ $middlewareName ] = $middleware;
+        $this->middlewareAliases[ $middlewareAlias ] = $middleware;
 
         return $this;
     }
 
 
     /**
-     * @param string|mixed $middlewareName
+     * @param string|mixed $middlewareGroupName
      *
      * @return null|string
      */
-    public function filterMiddlewareName($middlewareName) : ?string
+    public function filterMiddlewareGroupName($middlewareGroupName) : ?string
     {
-        if (is_string($middlewareName)
-            && ( '@' !== $middlewareName[ 0 ] ) // we use `@` sign to separate groups from middlewares
-            && ( strlen($middlewareName) )
+        if (is_string($middlewareGroupName)
+            && ( '@' === $middlewareGroupName[ 0 ] ) // we use `@` sign to separate groups from middlewares
+            && ( strlen($middlewareGroupName) > 1 )
         ) {
-            return $middlewareName;
+            return $middlewareGroupName;
+        }
+
+        return null;
+    }
+
+
+    /**
+     * @param MiddlewareInterface|mixed $middleware
+     */
+    public function filterMiddleware($middleware)
+    {
+        if ($middleware instanceof MiddlewareInterface) {
+            return $middleware;
+
+        } elseif ($this->actionProcessor->supportsAction($middleware)) {
+            return $middleware;
+        }
+
+        return null;
+    }
+
+
+    /**
+     * @param string|mixed $middlewareAlias
+     *
+     * @return null|string
+     */
+    public function filterMiddlewareAlias($middlewareAlias) : ?string
+    {
+        if (is_string($middlewareAlias)
+            && ( '@' !== $middlewareAlias[ 0 ] ) // we use `@` sign to separate groups from middlewares
+            && ( strlen($middlewareAlias) )
+        ) {
+            return $middlewareAlias;
         }
 
         return null;

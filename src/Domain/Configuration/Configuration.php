@@ -3,22 +3,12 @@
 
 namespace Gzhegow\Router\Domain\Configuration;
 
-use Gzhegow\Router\Domain\Factory\RouterFactory;
-use Gzhegow\Router\Domain\Loader\ChainRouteLoader;
-use Gzhegow\Router\Domain\Handler\HandlerInterface;
-use Gzhegow\Router\Domain\Loader\FilePhpRouteLoader;
-use Gzhegow\Router\Domain\Container\RouterContainer;
-use Gzhegow\Router\Domain\Loader\CallableRouteLoader;
-use Gzhegow\Router\Domain\Loader\RouteLoaderInterface;
-use Gzhegow\Router\Domain\Compiler\PatternRouteCompiler;
-use Gzhegow\Router\Domain\Factory\RouterFactoryInterface;
-use Gzhegow\Router\Domain\Compiler\RouteCompilerInterface;
-use Gzhegow\Router\Domain\Container\RouterContainerInterface;
-use Gzhegow\Router\Domain\Processor\Action\ChainActionProcessor;
-use Gzhegow\Router\Domain\Handler\Middleware\MiddlewareInterface;
-use Gzhegow\Router\Domain\Processor\Action\ActionProcessorInterface;
-use Gzhegow\Router\Domain\Processor\Middleware\ChainMiddlewareProcessor;
-use Gzhegow\Router\Domain\Processor\Middleware\MiddlewareProcessorInterface;
+use Psr\SimpleCache\CacheInterface;
+use Psr\Container\ContainerInterface;
+use Gzhegow\Router\RouterFactoryInterface;
+use Gzhegow\Router\Service\RouteLoader\RouteLoaderInterface;
+use Gzhegow\Router\Service\RouteCompiler\RouteCompilerInterface;
+use Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface;
 
 
 /**
@@ -26,262 +16,188 @@ use Gzhegow\Router\Domain\Processor\Middleware\MiddlewareProcessorInterface;
  */
 class Configuration
 {
-    const METHOD_CLI     = 'CLI';
-    const METHOD_CONNECT = 'CONNECT';
-    const METHOD_DELETE  = 'DELETE';
-    const METHOD_GET     = 'GET';
-    const METHOD_HEAD    = 'HEAD';
-    const METHOD_OPTIONS = 'OPTIONS';
-    const METHOD_PATCH   = 'PATCH';
-    const METHOD_POST    = 'POST';
-    const METHOD_PURGE   = 'PURGE';
-    const METHOD_PUT     = 'PUT';
-    const METHOD_SOCK    = 'SOCK';
-    const METHOD_TRACE   = 'TRACE';
-
-    const THE_METHOD_LIST = [
-        self::METHOD_CLI => true,
-
-        self::METHOD_HEAD    => true,
-        self::METHOD_OPTIONS => true,
-        self::METHOD_GET     => true,
-        self::METHOD_POST    => true,
-        self::METHOD_PUT     => true,
-        self::METHOD_PATCH   => true,
-        self::METHOD_DELETE  => true,
-        self::METHOD_PURGE   => true,
-        self::METHOD_TRACE   => true,
-        self::METHOD_CONNECT => true,
-
-        self::METHOD_SOCK => true,
-    ];
-
+    /**
+     * @var ContainerInterface
+     */
+    protected $container;
 
     /**
-     * @var RouterContainerInterface
+     * @var CacheInterface
      */
-    protected $routerContainer;
+    protected $cache;
+
     /**
      * @var RouterFactoryInterface
      */
     protected $routerFactory;
 
     /**
-     * @var RouteCompilerInterface
-     */
-    protected $routeCompiler;
-    /**
      * @var RouteLoaderInterface
      */
     protected $routeLoader;
-
     /**
-     * @var MiddlewareProcessorInterface
+     * @var RouteCompilerInterface
      */
-    protected $middlewareProcessor;
+    protected $routeCompiler;
+
     /**
      * @var ActionProcessorInterface
      */
     protected $actionProcessor;
 
     /**
-     * @var MiddlewareCollection
+     * @var mixed
      */
-    protected $middlewareCollection;
-    /**
-     * @var MiddlewareGroupCollection
-     */
-    protected $middlewareGroupCollection;
-    /**
-     * @var PatternCollection
-     */
-    protected $patternCollection;
-    /**
-     * @var SeparatorCollection
-     */
-    protected $separatorCollection;
+    protected $corsMiddleware;
 
 
     /**
-     * Constructor
-     *
-     * @param null|RouterContainerInterface     $routerContainer
-     * @param null|RouterFactoryInterface       $routerFactory
-     *
-     * @param null|RouteLoaderInterface         $routeLoader
-     * @param null|RouteCompilerInterface       $routeCompiler
-     *
-     * @param null|MiddlewareProcessorInterface $middlewareProcessor
-     * @param null|ActionProcessorInterface     $actionProcessor
+     * @return null|ContainerInterface
      */
-    public function __construct(
-        RouterContainerInterface $routerContainer = null,
-        RouterFactoryInterface $routerFactory = null,
-
-        RouteLoaderInterface $routeLoader = null,
-        RouteCompilerInterface $routeCompiler = null,
-
-        MiddlewareProcessorInterface $middlewareProcessor = null,
-        ActionProcessorInterface $actionProcessor = null
-    )
+    public function getContainer() : ?ContainerInterface
     {
-        $routerContainer = $routerContainer
-            ?? new RouterContainer(null);
+        return $this->container;
+    }
 
-        $routerFactory = $routerFactory
-            ?? new RouterFactory($this);
-
-        $routeLoader = $routeLoader
-            ?? new ChainRouteLoader([
-                new CallableRouteLoader(),
-                new FilePhpRouteLoader(),
-            ]);
-
-        $routeCompiler = $routeCompiler
-            ?? new PatternRouteCompiler($this);
-
-        $middlewareProcessor = $middlewareProcessor
-            ?? new ChainMiddlewareProcessor([
-                // new CallableMiddlewareProcessor(),
-            ]);
-
-        $actionProcessor = $actionProcessor
-            ?? new ChainActionProcessor([
-                // new AsteriskActionProcessor($this),
-                // new CallableActionProcessor(),
-            ]);
-
-
-        $this->routerContainer = $routerContainer;
-        $this->routerFactory = $routerFactory;
-
-        $this->routeLoader = $routeLoader;
-        $this->routeCompiler = $routeCompiler;
-
-        $this->middlewareProcessor = $middlewareProcessor;
-        $this->actionProcessor = $actionProcessor;
-
-        $this->middlewareCollection = new MiddlewareCollection($middlewareProcessor);
-        $this->middlewareGroupCollection = new MiddlewareGroupCollection($middlewareProcessor);
-        $this->patternCollection = new PatternCollection();
-        $this->separatorCollection = new SeparatorCollection();
+    /**
+     * @return null|CacheInterface
+     */
+    public function getCache() : ?CacheInterface
+    {
+        return $this->cache;
     }
 
 
     /**
-     * @return RouterContainerInterface
+     * @return null|RouterFactoryInterface
      */
-    public function getRouterContainer() : RouterContainerInterface
-    {
-        return $this->routerContainer;
-    }
-
-    /**
-     * @return RouterFactoryInterface
-     */
-    public function getRouterFactory() : RouterFactoryInterface
+    public function getRouterFactory() : ?RouterFactoryInterface
     {
         return $this->routerFactory;
     }
 
 
     /**
-     * @return RouteLoaderInterface
+     * @return null|RouteLoaderInterface
      */
-    public function getRouteLoader() : RouteLoaderInterface
+    public function getRouteLoader() : ?RouteLoaderInterface
     {
         return $this->routeLoader;
     }
 
     /**
-     * @return RouteCompilerInterface
+     * @return null|RouteCompilerInterface
      */
-    public function getRouteCompiler() : RouteCompilerInterface
+    public function getRouteCompiler() : ?RouteCompilerInterface
     {
         return $this->routeCompiler;
     }
 
 
     /**
-     * @return MiddlewareProcessorInterface
+     * @return null|ActionProcessorInterface
      */
-    public function getMiddlewareProcessor() : MiddlewareProcessorInterface
-    {
-        return $this->middlewareProcessor;
-    }
-
-    /**
-     * @return ActionProcessorInterface
-     */
-    public function getActionProcessor() : ActionProcessorInterface
+    public function getActionProcessor() : ?ActionProcessorInterface
     {
         return $this->actionProcessor;
     }
 
 
     /**
-     * @return MiddlewareCollection
+     * @return mixed
      */
-    public function getMiddlewareCollection() : MiddlewareCollection
+    public function getCorsMiddleware()
     {
-        return $this->middlewareCollection;
-    }
-
-    /**
-     * @return MiddlewareGroupCollection
-     */
-    public function getMiddlewareGroupCollection() : MiddlewareGroupCollection
-    {
-        return $this->middlewareGroupCollection;
-    }
-
-    /**
-     * @return SeparatorCollection
-     */
-    public function getSeparatorCollection() : SeparatorCollection
-    {
-        return $this->separatorCollection;
-    }
-
-    /**
-     * @return PatternCollection
-     */
-    public function getPatternCollection() : PatternCollection
-    {
-        return $this->patternCollection;
+        return $this->corsMiddleware;
     }
 
 
     /**
-     * @param string|mixed $routeMethod
+     * @param null|ContainerInterface $container
      *
-     * @return null|string
+     * @return static
      */
-    public function filterMethod($routeMethod) : ?string
+    public function setContainer(?ContainerInterface $container)
     {
-        return isset(static::THE_METHOD_LIST[ $routeMethod ]);
+        $this->container = $container;
+
+        return $this;
     }
 
 
     /**
-     * @param string|callable|HandlerInterface|mixed $action
+     * @param null|CacheInterface $cache
      *
-     * @return null|string
+     * @return static
      */
-    public function filterAction($action) : ?string
+    public function setCache(?CacheInterface $cache)
     {
-        return null
-            ?? $this->actionProcessor->supportsAction($action);
+        $this->cache = $cache;
+
+        return $this;
+    }
+
+
+    /**
+     * @param null|RouterFactoryInterface $routerFactory
+     *
+     * @return static
+     */
+    public function setRouterFactory(?RouterFactoryInterface $routerFactory)
+    {
+        $this->routerFactory = $routerFactory;
+
+        return $this;
+    }
+
+
+    /**
+     * @param null|RouteLoaderInterface $routeLoader
+     *
+     * @return static
+     */
+    public function setRouteLoader(?RouteLoaderInterface $routeLoader)
+    {
+        $this->routeLoader = $routeLoader;
+
+        return $this;
     }
 
     /**
-     * @param string|object|callable|MiddlewareInterface|mixed $middleware
+     * @param null|RouteCompilerInterface $routeCompiler
      *
-     * @return null|string
+     * @return static
      */
-    public function filterMiddleware($middleware) : ?string
+    public function setRouteCompiler(?RouteCompilerInterface $routeCompiler)
     {
-        return null
-            ?? $this->middlewareProcessor->supportsMiddleware($middleware);
+        $this->routeCompiler = $routeCompiler;
+
+        return $this;
+    }
+
+
+    /**
+     * @param null|ActionProcessorInterface $actionProcessor
+     *
+     * @return static
+     */
+    public function setActionProcessor(?ActionProcessorInterface $actionProcessor)
+    {
+        $this->actionProcessor = $actionProcessor;
+
+        return $this;
+    }
+
+
+    /**
+     * @param null|mixed $corsMiddleware
+     *
+     * @return static
+     */
+    public function setCorsMiddleware($corsMiddleware)
+    {
+        $this->corsMiddleware = $corsMiddleware;
+
+        return $this;
     }
 }

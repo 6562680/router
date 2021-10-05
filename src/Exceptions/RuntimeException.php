@@ -26,7 +26,7 @@ class RuntimeException extends \RuntimeException
     {
         $this->payload = $payload;
 
-        $message = is_array($message)
+        $message = is_iterable($message)
             ? $message
             : [ $message ];
 

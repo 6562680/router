@@ -3,9 +3,7 @@
 
 namespace Gzhegow\Router\Domain\Route;
 
-use Gzhegow\Router\Domain\Handler\HandlerInterface;
-use Gzhegow\Router\Exceptions\Runtime\OutOfBoundsException;
-use Gzhegow\Router\Domain\Handler\Middleware\MiddlewareInterface;
+use Gzhegow\Router\Domain\Cors\Cors;
 
 
 /**
@@ -18,38 +16,45 @@ class Route
      */
     protected $method;
     /**
-     * @var string
-     */
-    protected $endpoint;
-    /**
-     * @var string|callable|HandlerInterface|mixed
+     * @var mixed
      */
     protected $action;
 
     /**
      * @var string
      */
+    protected $endpoint;
+    /**
+     * @var string
+     */
+    protected $endpointRegex;
+
+    /**
+     * @var string
+     */
     protected $name;
+    /**
+     * @var string
+     */
+    protected $description;
 
     /**
      * @var array
      */
     protected $bindings = [];
     /**
-     * @var string[]
+     * @var array
+     */
+    protected $middlewares = [];
+    /**
+     * @var array
      */
     protected $tags = [];
 
     /**
-     * @var string|object|callable|MiddlewareInterface|array
+     * @var Cors
      */
-    protected $middlewares = [];
-
-
-    /**
-     * @var string
-     */
-    protected $endpointCompiled;
+    protected $cors;
 
 
     /**
@@ -57,106 +62,84 @@ class Route
      *
      * @param string      $method
      * @param string      $endpoint
-     * @param callable    $action
+     * @param             $action
      *
      * @param null|string $name
-     *
-     * @param null|array  $bindings
-     * @param null|array  $tags
-     *
-     * @param null|array  $middlewares
+     * @param null|string $description
      */
-    public function __construct(
-        string $method,
-        string $endpoint,
-        callable $action,
-
+    public function __construct(string $method, string $endpoint, $action,
         string $name = null,
-
-        array $bindings = null,
-        array $tags = null,
-
-        array $middlewares = null
+        string $description = null
     )
     {
         $this->method = $method;
-        $this->endpoint = $endpoint;
         $this->action = $action;
 
+        $this->endpoint = $endpoint;
+        $this->endpointRegex = $endpoint;
+
         $this->name = $name;
-
-        $this->bindings = $bindings ?? [];
-        $this->tags = $tags ?? [];
-
-        $this->middlewares = $middlewares ?? [];
+        $this->description = $description;
     }
 
 
     /**
-     * @param string $endpointCompiled
-     *
-     * @return static
+     * @return array
      */
-    public function withEndpointCompiled(string $endpointCompiled)
+    public function __serialize() : array
     {
-        $this->endpointCompiled = $endpointCompiled;
+        return array_filter([
+            'method' => $this->method,
+            'action' => $this->action,
 
-        return $this;
+            'endpoint'      => $this->endpoint,
+            'endpointRegex' => $this->endpointRegex,
+
+            'name'        => $this->name,
+            'description' => $this->description,
+
+            'bindings'    => $this->bindings,
+            'middlewares' => $this->middlewares,
+            'tags'        => $this->tags,
+
+            'cors' => $this->cors,
+        ], function ($v) { return ! is_null($v); });
     }
 
-
     /**
-     * @param array $bindings
+     * @param array $data
      *
-     * @return static
+     * @return void
      */
-    public function withBindings(array $bindings)
+    public function __unserialize(array $data) : void
     {
-        foreach ( $bindings as $binding => $bindingValue ) {
-            $this->withBinding($binding, $bindingValue);
-        }
+        $this->method = $data[ 'method' ] ?? null;
+        $this->action = $data[ 'action' ] ?? null;
 
-        return $this;
-    }
+        $this->endpoint = $data[ 'endpoint' ] ?? null;
+        $this->endpointRegex = $data[ 'endpointRegex' ] ?? null;
 
-    /**
-     * @param string     $binding
-     * @param null|mixed $value
-     *
-     * @return static
-     */
-    public function withBinding(string $binding, $value = null)
-    {
-        if (! isset($this->bindings[ $binding ])) {
-            throw new OutOfBoundsException(
-                [ 'Unknown binding: %s', $binding ]
-            );
-        }
+        $this->name = $data[ 'name' ] ?? null;
+        $this->description = $data[ 'description' ] ?? null;
 
-        $this->bindings[ $binding ] = $value;
+        $this->bindings = $data[ 'bindings' ] ?? [];
+        $this->middlewares = $data[ 'middlewares' ] ?? [];
+        $this->tags = $data[ 'tags' ] ?? [];
 
-        return $this;
+        $this->cors = $data[ 'cors' ] ?? null;
     }
 
 
     /**
-     * @return string
+     * @return null|string
      */
-    public function getMethod() : string
+    public function getMethod() : ?string
     {
         return $this->method;
     }
 
     /**
-     * @return string
-     */
-    public function getEndpoint() : string
-    {
-        return $this->endpoint;
-    }
-
-    /**
-     * @return string|callable|HandlerInterface|mixed
+     * @return null|mixed
      */
     public function getAction()
     {
@@ -167,9 +150,34 @@ class Route
     /**
      * @return null|string
      */
+    public function getEndpoint() : ?string
+    {
+        return $this->endpoint;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getEndpointRegex() : ?string
+    {
+        return $this->endpointRegex;
+    }
+
+
+    /**
+     * @return null|string
+     */
     public function getName() : ?string
     {
         return $this->name;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getDescription() : ?string
+    {
+        return $this->description;
     }
 
 
@@ -182,20 +190,11 @@ class Route
     }
 
     /**
-     * @return mixed
+     * @return null|mixed
      */
     public function getBinding(string $id)
     {
-        return $this->bindings[ $id ];
-    }
-
-
-    /**
-     * @return string[]
-     */
-    public function getTags() : array
-    {
-        return $this->tags;
+        return $this->bindings[ $id ] ?? null;
     }
 
 
@@ -207,32 +206,187 @@ class Route
         return $this->middlewares;
     }
 
-
     /**
-     * @return string
+     * @return array
      */
-    public function getEndpointCompiled() : string
+    public function getTags() : array
     {
-        return $this->endpointCompiled;
+        return array_keys($this->tags);
     }
 
 
     /**
-     * @param string $id
+     * @return Cors
+     */
+    public function getCors() : Cors
+    {
+        return $this->cors;
+    }
+
+
+    /**
+     * @param null|string $endpointRegex
      *
-     * @return null|mixed
+     * @return static
      */
-    public function hasBinding(string $id)
+    public function setEndpointRegex(?string $endpointRegex)
     {
-        return $this->bindings[ $id ] ?? null;
+        $this->endpointRegex = $endpointRegex;
+
+        return $this;
     }
 
 
     /**
-     * @return bool
+     * @param null|array $bindings
+     *
+     * @return static
      */
-    public function isCompiled() : bool
+    public function setBindings(?array $bindings)
     {
-        return isset($this->endpointCompiled);
+        if (null === $bindings) {
+            $this->bindings = [];
+
+        } else {
+            $this->addBindings($bindings);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param array $bindings
+     *
+     * @return static
+     */
+    public function addBindings(array $bindings)
+    {
+        foreach ( $bindings as $binding => $bindingValue ) {
+            $this->setBinding($binding, $bindingValue);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param string     $binding
+     * @param null|mixed $value
+     *
+     * @return static
+     */
+    public function setBinding(string $binding, $value = null)
+    {
+        $this->bindings[ $binding ] = $value;
+
+        return $this;
+    }
+
+
+    /**
+     * @param null|mixed|iterable $middlewares
+     *
+     * @return static
+     */
+    public function setMiddlewares($middlewares)
+    {
+        $this->middlewares = [];
+
+        if (null !== $middlewares) {
+            $this->addMiddlewares($middlewares);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param mixed|iterable $middlewares
+     *
+     * @return static
+     */
+    public function addMiddlewares($middlewares)
+    {
+        $middlewares = is_iterable($middlewares)
+            ? $middlewares
+            : [ $middlewares ];
+
+        foreach ( $middlewares as $middleware ) {
+            $this->addMiddleware($middleware);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $middleware
+     */
+    public function addMiddleware($middleware)
+    {
+        $key = is_object($middleware)
+            ? get_class($middleware) . '#' . spl_object_id($middleware)
+            : (string) $middleware;
+
+        $this->middlewares[ $key ] = $middleware;
+
+        return $this;
+    }
+
+
+    /**
+     * @param null|string|string[] $tags
+     *
+     * @return static
+     */
+    public function setTags($tags)
+    {
+        $this->tags = [];
+
+        if (null !== $tags) {
+            $this->addTags($tags);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param string|string[] $tags
+     *
+     * @return static
+     */
+    public function addTags($tags)
+    {
+        $tags = is_iterable($tags)
+            ? $tags
+            : [ $tags ];
+
+        foreach ( $tags as $tag ) {
+            $this->addTag($tag);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param string $tag
+     *
+     * @return static
+     */
+    public function addTag(string $tag)
+    {
+        $this->tags[ $tag ] = true;
+
+        return $this;
+    }
+
+
+    /**
+     * @param Cors $cors
+     *
+     * @return static
+     */
+    public function setCors(Cors $cors)
+    {
+        $this->cors = $cors;
+
+        return $this;
     }
 }

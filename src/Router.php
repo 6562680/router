@@ -4,22 +4,23 @@
 namespace Gzhegow\Router;
 
 use Gzhegow\Router\Domain\Route\Route;
-use Gzhegow\Router\Domain\Route\BlueprintRoute;
 use Gzhegow\Router\Domain\Route\RouteCollection;
 use Gzhegow\Router\Domain\Configuration\Configuration;
-use Gzhegow\Router\Domain\Route\RouteCollectionBuilder;
-use Gzhegow\Router\Domain\Specification\SpecificationInterface;
+use Gzhegow\Router\Domain\Configuration\PatternCollection;
+use Gzhegow\Router\Domain\Configuration\MiddlewareCollection;
+use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
+use Gzhegow\Router\Domain\Route\Specification\RouteSpectificationInterface;
 
 
 /**
  * Router
  */
-class Router
+class Router implements RouterInterface
 {
     /**
-     * @var Configuration
+     * @var RouterContainerInterface
      */
-    protected $configuration;
+    protected $routerContainer;
 
     /**
      * @var RouteCollection
@@ -34,14 +35,39 @@ class Router
     /**
      * Constructor
      *
-     * @param Configuration $configuration
+     * @param null|Configuration $configuration
      */
-    public function __construct(Configuration $configuration)
+    public function __construct(?Configuration $configuration)
     {
-        $this->configuration = $configuration;
+        $routeCollection = new RouteCollection();
+        $routerContainer = new RouterContainer($configuration);
 
-        $this->routeCollection = new RouteCollection();
-        $this->routeCurrent = null;
+        $routerContainer->set(RouterInterface::class, $this);
+        $routerContainer->set(RouteCollection::class, $routeCollection);
+
+        $this->routerContainer = $routerContainer;
+        $this->routeCollection = $routeCollection;
+    }
+
+
+    /**
+     * @param mixed $source
+     *
+     * @return static
+     */
+    public function load($source)
+    {
+        $loader = $this->routerContainer->getRouteLoader();
+
+        if (! $loader->supportsSource($source)) {
+            throw new InvalidArgumentException(
+                [ 'Invalid source: %s', $source ]
+            );
+        }
+
+        $loader->loadSource($source, $this->getRouteCollection());
+
+        return $this;
     }
 
 
@@ -54,21 +80,37 @@ class Router
      */
     public function handle(Route $route, $payload = null, ...$arguments)
     {
+        $factory = $this->routerContainer->getRouterFactory();
+
+        $this->routerContainer->set(Route::class, $route);
+        $this->routerContainer->set('$route', $route);
+
         $this->routeCurrent = $route;
 
-        $result = $payload;
+        $handler = $factory->newAction($route->getAction());
 
-        if ($middlewares = $route->getMiddlewares()) {
-            $middlewareProcessor = $this->configuration->getMiddlewareProcessor();
+        $middlewares = [];
+        if ($routeMiddlewares = $route->getMiddlewares()) {
+            $middlewareCollection = $this->routerContainer->getMiddlewareCollection();
 
-            foreach ( $middlewares as $middleware ) {
-                $result = $middlewareProcessor->processMiddleware($middleware, null, $result, ...$arguments);
+            foreach ( $routeMiddlewares as $routeMiddleware ) {
+                if ($middlewaresArray = $middlewareCollection->hasMiddlewareGroup($routeMiddleware)) {
+                    $middlewares = array_merge($middlewares, $middlewaresArray);
+
+                } else {
+                    $middlewares[] = $routeMiddleware;
+                }
+            }
+
+            end($middlewares);
+            while ( $middleware = current($middlewares) ) {
+                $handler = $factory->newMiddleware($middleware, $handler);
+
+                prev($middlewares);
             }
         }
 
-        $actionProcessor = $this->configuration->getActionProcessor();
-
-        $result = $actionProcessor->processAction($route, $result, ...$arguments);
+        $result = $handler->handle($payload, ...$arguments);
 
         $this->routeCurrent = null;
 
@@ -77,11 +119,11 @@ class Router
 
 
     /**
-     * @return Configuration
+     * @return RouterContainerInterface
      */
-    public function getConfiguration() : Configuration
+    public function getRouterContainer() : RouterContainerInterface
     {
-        return $this->configuration;
+        return $this->routerContainer;
     }
 
 
@@ -90,8 +132,9 @@ class Router
      */
     public function getRouteCollection() : RouteCollection
     {
-        return $this->routeCollection;
+        return $this->routerContainer->getRouteCollection();
     }
+
 
     /**
      * @return null|Route
@@ -103,287 +146,62 @@ class Router
 
 
     /**
-     * @param Route $route
+     * @return MiddlewareCollection
+     */
+    public function getMiddlewareCollection() : MiddlewareCollection
+    {
+        return $this->routerContainer->getMiddlewareCollection();
+    }
+
+    /**
+     * @return PatternCollection
+     */
+    public function getPatternCollection() : PatternCollection
+    {
+        return $this->routerContainer->getPatternCollection();
+    }
+
+
+    /**
+     * @param \Closure    $closure
+     * @param null|int    $ttl
+     * @param null|string $key
      *
      * @return static
      */
-    public function addRoute(Route $route)
+    public function remember(\Closure $closure, int $ttl = null, string $key = null)
     {
-        $this->routeCollection->addRoute($route);
+        $cache = $this->routerContainer->getRouterCache();
 
-        return $this;
-    }
-
-    /**
-     * @param BlueprintRoute $routeBlueprint
-     *
-     * @return static
-     */
-    public function addRouteBlueprint(BlueprintRoute $routeBlueprint)
-    {
-        $route = $this->configuration->getRouteCompiler()->compile($routeBlueprint);
-
-        $this->routeCollection->addRoute($route);
-
-        return $this;
-    }
-
-
-    /**
-     * @param string $endpoint
-     * @param mixed  $action
-     *
-     * @return BlueprintRoute
-     */
-    public function get(string $endpoint, $action) : BlueprintRoute
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $route = $routeCollectionBuilder->get($endpoint, $action);
-
-        return $route;
-    }
-
-    /**
-     * @param string $endpoint
-     * @param mixed  $action
-     *
-     * @return BlueprintRoute
-     */
-    public function post(string $endpoint, $action) : BlueprintRoute
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $route = $routeCollectionBuilder->post($endpoint, $action);
-
-        return $route;
-    }
-
-    /**
-     * @param string $endpoint
-     * @param mixed  $action
-     *
-     * @return BlueprintRoute
-     */
-    public function put(string $endpoint, $action) : BlueprintRoute
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $route = $routeCollectionBuilder->put($endpoint, $action);
-
-        return $route;
-    }
-
-    /**
-     * @param string $endpoint
-     * @param mixed  $action
-     *
-     * @return BlueprintRoute
-     */
-    public function patch(string $endpoint, $action) : BlueprintRoute
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $route = $routeCollectionBuilder->patch($endpoint, $action);
-
-        return $route;
-    }
-
-    /**
-     * @param string $endpoint
-     * @param mixed  $action
-     *
-     * @return BlueprintRoute
-     */
-    public function delete(string $endpoint, $action) : BlueprintRoute
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $route = $routeCollectionBuilder->delete($endpoint, $action);
-
-        return $route;
-    }
-
-    /**
-     * @param string $endpoint
-     * @param mixed  $action
-     *
-     * @return BlueprintRoute
-     */
-    public function purge(string $endpoint, $action) : BlueprintRoute
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $route = $routeCollectionBuilder->purge($endpoint, $action);
-
-        return $route;
-    }
-
-
-    /**
-     * @param string $endpoint
-     * @param mixed  $action
-     *
-     * @return BlueprintRoute
-     */
-    public function options(string $endpoint, $action) : BlueprintRoute
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $route = $routeCollectionBuilder->options($endpoint, $action);
-
-        return $route;
-    }
-
-
-    /**
-     * @param string $endpoint
-     * @param mixed  $action
-     *
-     * @return BlueprintRoute
-     */
-    public function cli(string $endpoint, $action) : BlueprintRoute
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $route = $routeCollectionBuilder->cli($endpoint, $action);
-
-        return $route;
-    }
-
-
-    /**
-     * @param string $method
-     * @param string $endpoint
-     * @param mixed  $action
-     *
-     * @return BlueprintRoute
-     */
-    public function route(string $method, string $endpoint, $action) : BlueprintRoute
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $routeBlueprint = $routeCollectionBuilder->route($method, $endpoint, $action);
-
-        return $routeBlueprint;
-    }
-
-    /**
-     * @param string|callable|object|mixed $groupLoader
-     *
-     * @return static
-     */
-    public function group($groupLoader)
-    {
-        $builder = $this->configuration->getRouteCollectionBuilder()->group($groupLoader);
-
-        $routeCollection = $builder->build();
-
-        foreach ( $routeCollection->getRoutes() as $route ) {
-            $this->routeCollection->addRoute($route);
-        }
+        $this->routeCollection = $cache->remember($closure, $ttl, $key);
 
         return $this;
     }
 
 
     /**
-     * @param string $endpoint
+     * @param RouteSpectificationInterface $routeSpecification
+     * @param null|int                     $limit
+     * @param null|int                     $offset
      *
-     * @return RouteCollectionBuilder
+     * @return Route[]
      */
-    public function endpoint(string $endpoint) : RouteCollectionBuilder
+    public function matchAll(RouteSpectificationInterface $routeSpecification, int $limit = null, int $offset = null) : array
     {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
+        $route = $this->getRouteCollection()->all($routeSpecification);
 
-        $builder = $routeCollectionBuilder->endpoint($endpoint);
-
-        return $builder;
-    }
-
-
-    /**
-     * @param string $namespace
-     *
-     * @return RouteCollectionBuilder
-     */
-    public function namespace(string $namespace) : RouteCollectionBuilder
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $builder = $routeCollectionBuilder->name($namespace);
-
-        return $builder;
+        return $route;
     }
 
     /**
-     * @param string $name
-     *
-     * @return RouteCollectionBuilder
-     */
-    public function name(string $name) : RouteCollectionBuilder
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $builder = $routeCollectionBuilder->name($name);
-
-        return $builder;
-    }
-
-
-    /**
-     * @param array $bindings
-     *
-     * @return RouteCollectionBuilder
-     */
-    public function bindings(array $bindings) : RouteCollectionBuilder
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $builder = $routeCollectionBuilder->bindings($bindings);
-
-        return $builder;
-    }
-
-    /**
-     * @param array $tags
-     *
-     * @return RouteCollectionBuilder
-     */
-    public function tags(array $tags) : RouteCollectionBuilder
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $builder = $routeCollectionBuilder->tags($tags);
-
-        return $builder;
-    }
-
-    /**
-     * @param array $middlewares
-     *
-     * @return RouteCollectionBuilder
-     */
-    public function middlewares(array $middlewares) : RouteCollectionBuilder
-    {
-        $routeCollectionBuilder = $this->configuration->getRouteCollectionBuilder();
-
-        $builder = $routeCollectionBuilder->middlewares($middlewares);
-
-        return $builder;
-    }
-
-
-    /**
-     * @param SpecificationInterface $routeSpec
+     * @param RouteSpectificationInterface $routeSpecification
+     * @param null|int                     $offset
      *
      * @return null|Route
      */
-    public function match(SpecificationInterface $routeSpec) : ?Route
+    public function match(RouteSpectificationInterface $routeSpecification, int $offset = null) : ?Route
     {
-        if ($route = $this->routeCollection->findBySpec($routeSpec)) {
-            $this->routeCurrent = $route;
-        }
+        $route = $this->getRouteCollection()->first($routeSpecification);
 
         return $route;
     }

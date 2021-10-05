@@ -9,8 +9,7 @@ namespace Gzhegow\Router\Tests\Classes;
  */
 class TestMiddleware
 {
-    public function handle($payload, \Closure $next)
+    public function __invoke()
     {
-        return $next($payload);
     }
 }

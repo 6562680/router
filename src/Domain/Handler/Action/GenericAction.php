@@ -3,7 +3,7 @@
 namespace Gzhegow\Router\Domain\Handler\Action;
 
 use Gzhegow\Router\Domain\Handler\HandlerInterface;
-use Gzhegow\Router\Domain\Processor\Action\ActionProcessorInterface;
+use Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface;
 
 
 /**
@@ -25,6 +25,7 @@ class GenericAction implements HandlerInterface
      * Constructor
      *
      * @param string|object|callable|mixed $action
+     * @param ActionProcessorInterface     $routeProcessor
      */
     public function __construct($action, ActionProcessorInterface $routeProcessor)
     {

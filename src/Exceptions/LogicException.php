@@ -4,7 +4,6 @@
 namespace Gzhegow\Router\Exceptions;
 
 
-
 /**
  * LogicException
  */
@@ -27,7 +26,7 @@ class LogicException extends \LogicException
     {
         $this->payload = $payload;
 
-        $message = is_array($message)
+        $message = is_iterable($message)
             ? $message
             : [ $message ];
 
