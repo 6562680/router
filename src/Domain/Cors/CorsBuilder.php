@@ -154,7 +154,7 @@ class CorsBuilder
 
                 if (false === @preg_match('/' . $allowOrigin . '/', '')) {
                     throw new InvalidArgumentException(
-                        [ 'Invalid AllowOrigin / Regex: %s', $allowOrigin ]
+                        [ 'Invalid AllowOrigin: %s', $allowOrigin ]
                     );
                 }
 
@@ -190,7 +190,7 @@ class CorsBuilder
 
                 if (false === @preg_match('/' . $value . '/', '')) {
                     throw new InvalidArgumentException(
-                        [ 'Invalid AllowHeader / Regex: %s', $value ]
+                        [ 'Invalid AllowHeader: %s', $value ]
                     );
                 }
 
@@ -229,7 +229,7 @@ class CorsBuilder
 
                 if (false === @preg_match('/' . $value . '/', '')) {
                     throw new InvalidArgumentException(
-                        [ 'Invalid ExposeHeader / Regex: %s', $value ]
+                        [ 'Invalid ExposeHeader: %s', $value ]
                     );
                 }
 

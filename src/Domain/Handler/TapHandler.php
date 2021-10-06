@@ -9,13 +9,14 @@ namespace Gzhegow\Router\Domain\Handler;
 class TapHandler implements HandlerInterface
 {
     /**
-     * @param mixed $payload
      * @param mixed ...$arguments
      *
      * @return null|int|mixed
      */
-    public function handle($payload, ...$arguments)
+    public function handle(...$arguments)
     {
-        return $payload;
+        $result = $arguments[ 0 ] ?? null;
+
+        return $result;
     }
 }

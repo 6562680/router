@@ -4,7 +4,7 @@
 namespace Gzhegow\Router\Domain\Blueprint;
 
 use Gzhegow\Router\Domain\Route\Route;
-use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
+use Gzhegow\Router\Exceptions\Runtime\OutOfBoundsException;
 
 
 /**
@@ -12,39 +12,6 @@ use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
  */
 class Blueprint extends AbstractBlueprint
 {
-    const METHOD_CLI     = 'CLI';
-    const METHOD_CONNECT = 'CONNECT';
-    const METHOD_DELETE  = 'DELETE';
-    const METHOD_GET     = 'GET';
-    const METHOD_HEAD    = 'HEAD';
-    const METHOD_OPTIONS = 'OPTIONS';
-    const METHOD_PATCH   = 'PATCH';
-    const METHOD_POST    = 'POST';
-    const METHOD_PURGE   = 'PURGE';
-    const METHOD_PUT     = 'PUT';
-    const METHOD_SOCK    = 'SOCK';
-    const METHOD_TRACE   = 'TRACE';
-
-    const THE_METHOD_LIST = [
-        self::METHOD_CLI => true,
-
-        self::METHOD_HEAD    => true,
-        self::METHOD_OPTIONS => true,
-
-        self::METHOD_GET    => true,
-        self::METHOD_POST   => true,
-        self::METHOD_PUT    => true,
-        self::METHOD_PATCH  => true,
-        self::METHOD_DELETE => true,
-        self::METHOD_PURGE  => true,
-
-        self::METHOD_TRACE   => true,
-        self::METHOD_CONNECT => true,
-
-        self::METHOD_SOCK => true,
-    ];
-
-
     /**
      * @var string
      */
@@ -115,11 +82,30 @@ class Blueprint extends AbstractBlueprint
      */
     public function method(?string $method)
     {
+        $enum = [
+            'CLI' => true,
+
+            'HEAD'    => true,
+            'OPTIONS' => true,
+
+            'GET'    => true,
+            'POST'   => true,
+            'PUT'    => true,
+            'PATCH'  => true,
+            'DELETE' => true,
+            'PURGE'  => true,
+
+            'TRACE'   => true,
+            'CONNECT' => true,
+
+            'SOCK' => true,
+        ];
+
         $value = strtoupper(trim($method));
 
-        if (! isset(static::THE_METHOD_LIST[ $value ])) {
-            throw new InvalidArgumentException(
-                [ 'Invalid Method: %s', $method ]
+        if (! isset($enum[ $value ])) {
+            throw new OutOfBoundsException(
+                [ 'Invalid method: %s', $method ]
             );
         }
 

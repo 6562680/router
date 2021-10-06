@@ -44,6 +44,17 @@ class RouterCache implements RouterCacheInterface
 
 
     /**
+     * @param RouteCollection $routeCollection
+     *
+     * @return RouteCollection
+     */
+    protected function assertRouteCollection($routeCollection) : RouteCollection
+    {
+        return $routeCollection;
+    }
+
+
+    /**
      * @param \Closure $func
      * @param null|int $ttl
      * @param null|int $key
@@ -55,11 +66,11 @@ class RouterCache implements RouterCacheInterface
         $key = $key ?? __METHOD__;
 
         try {
-            $routeCollection = null;
+            $isExpired = ! ( $this->cache && $this->cache->has($key) );
 
-            if (! ( $this->cache && $this->cache->has($key) )) {
-                $routeCollection = $this->call($func);
-            }
+            $routeCollection = $isExpired ? $func() : null;
+
+            $routeCollection = $this->assertRouteCollection($routeCollection);
 
             if ($this->cache) {
                 $this->cache->set($key, $routeCollection, $ttl);
@@ -70,15 +81,5 @@ class RouterCache implements RouterCacheInterface
         }
 
         return $routeCollection;
-    }
-
-    /**
-     * @param \Closure $func
-     *
-     * @return RouteCollection
-     */
-    protected function call(\Closure $func) : RouteCollection
-    {
-        return $func();
     }
 }

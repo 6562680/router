@@ -3,7 +3,6 @@
 
 namespace Gzhegow\Router\Service\ActionProcessor;
 
-use Gzhegow\Router\Vendor\Helper;
 use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\RouterContainerInterface;
 use Gzhegow\Router\Domain\Route\RouteAwareInterface;
@@ -35,20 +34,19 @@ class CallableActionProcessor implements
 
     /**
      * @param callable $action
-     * @param mixed    $payload
      * @param mixed    ...$arguments
      *
      * @return null|int|mixed
      */
-    public function processAction($action, $payload, ...$arguments)
+    public function processAction($action, ...$arguments)
     {
         $route = $this->getRoute();
 
         $args = func_get_args();
         array_shift($args);
-        $result = $this->routerContainer->call(null, $action,
-            $args + $route->getBindings()
-        );
+        $args = $args + $route->getBindings();
+
+        $result = $this->routerContainer->call(null, $action, $args);
 
         return $result;
     }
@@ -73,11 +71,6 @@ class CallableActionProcessor implements
      */
     public function supportsAction($action) : bool
     {
-        if (is_object($action)) {
-            return false;
-        }
-
-        return is_callable($action)
-            && ! Helper::filterCallableArrayPublic($action);
+        return is_callable($action);
     }
 }

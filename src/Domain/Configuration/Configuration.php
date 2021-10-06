@@ -59,6 +59,7 @@ class Configuration
         return $this->container;
     }
 
+
     /**
      * @return null|CacheInterface
      */

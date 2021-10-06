@@ -103,7 +103,9 @@ class Route
             'tags'        => $this->tags,
 
             'cors' => $this->cors,
-        ], function ($v) { return ! is_null($v); });
+        ], function ($v) {
+            return ! is_null($v);
+        });
     }
 
     /**

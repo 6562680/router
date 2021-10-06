@@ -34,12 +34,11 @@ class AsteriskActionProcessor implements
 
     /**
      * @param string $action
-     * @param mixed  $payload
      * @param mixed  ...$arguments
      *
      * @return null|int|mixed
      */
-    public function processAction($action, $payload, ...$arguments)
+    public function processAction($action, ...$arguments)
     {
         $route = $this->getRoute();
 
@@ -51,9 +50,9 @@ class AsteriskActionProcessor implements
 
         $args = func_get_args();
         array_shift($args);
-        $result = $this->routerContainer->call(null, $callable,
-            $args + $route->getBindings()
-        );
+        $args = $args + $route->getBindings();
+
+        $result = $this->routerContainer->call(null, $callable, $args);
 
         return $result;
     }

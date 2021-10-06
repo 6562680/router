@@ -76,6 +76,7 @@ interface RouterContainerInterface extends ContainerInterface
      */
     public function has(string $id) : bool;
 
+
     /**
      * @param string $id
      * @param mixed  $value
@@ -84,14 +85,21 @@ interface RouterContainerInterface extends ContainerInterface
      */
     public function set(string $id, $value);
 
+    /**
+     * @param string $id
+     *
+     * @return static
+     */
+    public function unset(string $id);
+
 
     /**
      * @param string|object $objectOrClass
-     * @param null|array    $bindings
+     * @param null|array    $parameters
      *
      * @return object
      */
-    public function new($objectOrClass, array $bindings = null) : object;
+    public function new($objectOrClass, array $parameters = null) : object;
 
     /**
      * @param null|object            $newthis

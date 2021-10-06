@@ -9,8 +9,7 @@ namespace Gzhegow\Router\Domain\Handler;
 interface HandlerInterface
 {
     /**
-     * @param mixed $payload
      * @param mixed ...$arguments
      */
-    public function handle($payload, ...$arguments);
+    public function handle(...$arguments);
 }

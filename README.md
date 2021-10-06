@@ -17,7 +17,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 
 $configuration = ( new Configuration() )
-    // ->setCache(null) // Psr\SimpleCache\CacheInterface
+    // ->setCache(null) // \Psr\SimpleCache\CacheInterface
     // ->setContainer(null) // \Psr\Container\ContainerInterface
     // ->setRouterFactory(null) // \Gzhegow\Router\RouterFactoryInterface
     // ->setRouteCompiler(null) // \Gzhegow\Router\Service\RouteCompiler\RouteCompilerInterface

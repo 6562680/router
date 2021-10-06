@@ -11,6 +11,11 @@ use Gzhegow\Router\Domain\Route\RouteCollection;
 interface RouterCacheInterface
 {
     /**
+     * @return static
+     */
+    public function clear();
+
+    /**
      * @param \Closure $func
      * @param null|int $ttl
      * @param null|int $key
@@ -18,9 +23,4 @@ interface RouterCacheInterface
      * @return RouteCollection
      */
     public function remember(\Closure $func, int $ttl = null, int $key = null) : RouteCollection;
-
-    /**
-     * @return static
-     */
-    public function clear();
 }

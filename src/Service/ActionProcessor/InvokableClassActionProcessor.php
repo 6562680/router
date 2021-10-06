@@ -34,22 +34,23 @@ class InvokableClassActionProcessor implements
 
     /**
      * @param string $action
-     * @param mixed  $payload
      * @param mixed  ...$arguments
      *
      * @return null|int|mixed
      */
-    public function processAction($action, $payload, ...$arguments)
+    public function processAction($action, ...$arguments)
     {
         $route = $this->getRoute();
 
         $object = $this->routerContainer->new($action, $route->getBindings());
 
+        $callable = [ $object, '__invoke' ];
+
         $args = func_get_args();
         array_shift($args);
-        $result = $this->routerContainer->call(null, [ $object, '__invoke' ],
-            $args + $route->getBindings()
-        );
+        $args = $args + $route->getBindings();
+
+        $result = $this->routerContainer->call(null, $callable, $args);
 
         return $result;
     }

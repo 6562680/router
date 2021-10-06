@@ -26,6 +26,15 @@ class RouteCollection
 
 
     /**
+     * Constructor
+     */
+    public function __construct()
+    {
+        $this->routesUniq = static::$routesUniqDefault;
+    }
+
+
+    /**
      * @return array
      */
     public function __serialize() : array
@@ -43,10 +52,7 @@ class RouteCollection
     {
         $this->routes = $data[ 'routes' ] ?? [];
         $this->routesUniq = $data[ 'routesUniq' ]
-            ?? [
-                'method.endpoint' => [],
-                'name'            => [],
-            ];
+            ?? static::$routesUniqDefault;
     }
 
 
@@ -177,4 +183,13 @@ class RouteCollection
 
         return $match;
     }
+
+
+    /**
+     * @var bool[][]
+     */
+    protected static $routesUniqDefault = [
+        'method.endpoint' => [],
+        'name'            => [],
+    ];
 }

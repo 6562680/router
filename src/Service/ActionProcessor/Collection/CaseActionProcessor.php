@@ -36,18 +36,17 @@ class CaseActionProcessor implements ActionProcessorInterface
 
     /**
      * @param mixed $action
-     * @param mixed $payload
      * @param mixed ...$arguments
      *
      * @return null|int|mixed
      */
-    public function processAction($action, $payload, ...$arguments)
+    public function processAction($action, ...$arguments)
     {
         $result = null;
 
         foreach ( $this->actionProcessors as $child ) {
             if ($child->supportsAction($action)) {
-                $result = $child->processAction($action, $payload, ...$arguments);
+                $result = $child->processAction($action, ...$arguments);
 
                 break;
             }

@@ -22,7 +22,7 @@ class FilePhpRouteLoader implements RouteLoaderInterface
     {
         $collection = $collection ?? new RouteCollection();
 
-        require $realpath = Helper::thePathFilePhpVal($source);
+        require $realpath = Helper::theRealpath($source);
 
         return $collection;
     }
@@ -35,7 +35,6 @@ class FilePhpRouteLoader implements RouteLoaderInterface
      */
     public function supportsSource($source) : bool
     {
-        return Helper::filterFilePhp($source)
-            && ! Helper::extractClassesFromFile($source);
+        return (bool) Helper::filterFilePhp($source);
     }
 }

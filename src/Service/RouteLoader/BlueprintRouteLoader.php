@@ -6,7 +6,6 @@ namespace Gzhegow\Router\Service\RouteLoader;
 use Gzhegow\Router\RouterContainerInterface;
 use Gzhegow\Router\Domain\Route\RouteCollection;
 use Gzhegow\Router\Domain\Blueprint\BlueprintManager;
-use Gzhegow\Router\Exceptions\Runtime\UnexpectedValueException;
 
 
 /**
@@ -39,17 +38,11 @@ class BlueprintRouteLoader implements RouteLoaderInterface
      */
     public function loadSource($source, RouteCollection $collection = null) : RouteCollection
     {
-        if (null === ( $blueprintManager = $this->filterBlueprintManager($source) )) {
-            throw new UnexpectedValueException(
-                [ 'Invalid source: %s', $source ]
-            );
-        }
+        $blueprintManager = $this->assertBlueprintManager($source);
 
         $collection = $collection ?? new RouteCollection();
 
-        $routeLoader = $this->routerContainer->getRouteLoader();
-
-        $blueprintManager->load($routeLoader);
+        $blueprintManager->load($this->routerContainer->getRouteLoader());
 
         if ($routes = $blueprintManager->flushRoutes()) {
             $routeCompiler = $this->routerContainer->getRouteCompiler();
@@ -70,15 +63,13 @@ class BlueprintRouteLoader implements RouteLoaderInterface
 
 
     /**
-     * @param BlueprintManager $source
+     * @param BlueprintManager $blueprintManager
      *
-     * @return null|BlueprintManager
+     * @return BlueprintManager
      */
-    protected function filterBlueprintManager($source) : ?BlueprintManager
+    protected function assertBlueprintManager($blueprintManager) : BlueprintManager
     {
-        return $source instanceof BlueprintManager
-            ? $source
-            : null;
+        return $blueprintManager;
     }
 
 
@@ -89,6 +80,6 @@ class BlueprintRouteLoader implements RouteLoaderInterface
      */
     public function supportsSource($source) : bool
     {
-        return (bool) $this->filterBlueprintManager($source);
+        return $source instanceof BlueprintManager;
     }
 }

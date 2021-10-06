@@ -17,11 +17,11 @@ use Gzhegow\Router\Domain\Handler\Middleware\MiddlewareInterface;
 use Gzhegow\Router\Service\ActionProcessor\HandlerActionProcessor;
 use Gzhegow\Router\Service\RouteLoader\Collection\CaseRouteLoader;
 use Gzhegow\Router\Service\ActionProcessor\AsteriskActionProcessor;
-use Gzhegow\Router\Service\ActionProcessor\CallableActionProcessor;
 use Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface;
 use Gzhegow\Router\Service\RouteCompiler\Collection\PipeRouteCompiler;
 use Gzhegow\Router\Service\ActionProcessor\InvokableClassActionProcessor;
 use Gzhegow\Router\Service\ActionProcessor\Collection\CaseActionProcessor;
+use Gzhegow\Router\Service\ActionProcessor\CallableActionProcessor\CallableDynamicActionProcessor;
 
 
 /**
@@ -54,7 +54,7 @@ class RouterFactory implements RouterFactoryInterface
         return new CaseRouteLoader([
             new BlueprintRouteLoader($this->routerContainer),
             new FilePhpRouteLoader(),
-            new CallableRouteLoader(),
+            new CallableRouteLoader($this->routerContainer),
         ]);
     }
 
@@ -79,7 +79,7 @@ class RouterFactory implements RouterFactoryInterface
             new HandlerActionProcessor($this->routerContainer),
             new InvokableClassActionProcessor($this->routerContainer),
             new AsteriskActionProcessor($this->routerContainer),
-            new CallableActionProcessor($this->routerContainer),
+            new CallableDynamicActionProcessor($this->routerContainer),
         ]);
     }
 

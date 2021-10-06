@@ -19,11 +19,9 @@ interface ActionProcessorInterface
 
     /**
      * @param mixed $action
-     *
-     * @param mixed $payload
      * @param mixed ...$arguments
      *
      * @return null|int|mixed
      */
-    public function processAction($action, $payload, ...$arguments);
+    public function processAction($action, ...$arguments);
 }

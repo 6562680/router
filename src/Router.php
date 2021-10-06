@@ -39,14 +39,12 @@ class Router implements RouterInterface
      */
     public function __construct(?Configuration $configuration)
     {
-        $routeCollection = new RouteCollection();
         $routerContainer = new RouterContainer($configuration);
 
         $routerContainer->set(RouterInterface::class, $this);
-        $routerContainer->set(RouteCollection::class, $routeCollection);
 
         $this->routerContainer = $routerContainer;
-        $this->routeCollection = $routeCollection;
+        $this->routeCollection = $routerContainer->getRouteCollection();
     }
 
 
@@ -65,27 +63,28 @@ class Router implements RouterInterface
             );
         }
 
-        $loader->loadSource($source, $this->getRouteCollection());
+        $routeCollection = $loader->loadSource($source);
+
+        $this->routeCollection = $routeCollection;
+
+        $this->routerContainer->set(RouteCollection::class, $routeCollection);
 
         return $this;
     }
 
 
     /**
-     * @param Route      $route
-     * @param null|mixed $payload
-     * @param mixed      ...$arguments
+     * @param Route $route
+     * @param mixed ...$arguments
      *
      * @return null|int|mixed
      */
-    public function handle(Route $route, $payload = null, ...$arguments)
+    public function handle(Route $route, ...$arguments)
     {
         $factory = $this->routerContainer->getRouterFactory();
 
-        $this->routerContainer->set(Route::class, $route);
-        $this->routerContainer->set('$route', $route);
-
         $this->routeCurrent = $route;
+        $this->routerContainer->set(Route::class, $route);
 
         $handler = $factory->newAction($route->getAction());
 
@@ -94,12 +93,11 @@ class Router implements RouterInterface
             $middlewareCollection = $this->routerContainer->getMiddlewareCollection();
 
             foreach ( $routeMiddlewares as $routeMiddleware ) {
-                if ($middlewaresArray = $middlewareCollection->hasMiddlewareGroup($routeMiddleware)) {
-                    $middlewares = array_merge($middlewares, $middlewaresArray);
+                $array = null
+                    ?? $middlewareCollection->hasMiddlewareGroup($routeMiddleware)
+                    ?? [ $routeMiddleware ];
 
-                } else {
-                    $middlewares[] = $routeMiddleware;
-                }
+                $middlewares = array_merge($middlewares, $array);
             }
 
             end($middlewares);
@@ -110,8 +108,9 @@ class Router implements RouterInterface
             }
         }
 
-        $result = $handler->handle($payload, ...$arguments);
+        $result = $handler->handle(...$arguments);
 
+        $this->routerContainer->unset(Route::class);
         $this->routeCurrent = null;
 
         return $result;
@@ -126,6 +125,14 @@ class Router implements RouterInterface
         return $this->routerContainer;
     }
 
+    /**
+     * @return RouterCacheInterface
+     */
+    public function getRouterCache() : RouterCacheInterface
+    {
+        return $this->routerContainer->getRouterCache();
+    }
+
 
     /**
      * @return RouteCollection
@@ -134,7 +141,6 @@ class Router implements RouterInterface
     {
         return $this->routerContainer->getRouteCollection();
     }
-
 
     /**
      * @return null|Route
@@ -163,15 +169,6 @@ class Router implements RouterInterface
 
 
     /**
-     * @return RouterCacheInterface
-     */
-    public function getRouterCache() : RouterCacheInterface
-    {
-        return $this->routerContainer->getRouterCache();
-    }
-
-
-    /**
      * @param \Closure    $closure
      * @param null|int    $ttl
      * @param null|string $key
@@ -182,20 +179,24 @@ class Router implements RouterInterface
     {
         $cache = $this->routerContainer->getRouterCache();
 
-        $this->routeCollection = $cache->remember($closure, $ttl, $key);
+        $routeCollection = $cache->remember($closure, $ttl, $key);
+
+        $this->routeCollection = $routeCollection;
+
+        $this->routerContainer->set(RouteCollection::class, $routeCollection);
 
         return $this;
     }
 
 
     /**
-     * @param RouteSpectificationInterface $routeSpecification
-     * @param null|int                     $limit
-     * @param null|int                     $offset
+     * @param null|RouteSpectificationInterface $routeSpecification
+     * @param null|int                          $limit
+     * @param null|int                          $offset
      *
      * @return Route[]
      */
-    public function matchAll(RouteSpectificationInterface $routeSpecification, int $limit = null, int $offset = null) : array
+    public function matchAll(RouteSpectificationInterface $routeSpecification = null, int $limit = null, int $offset = null) : array
     {
         $route = $this->getRouteCollection()->all($routeSpecification);
 
@@ -203,12 +204,12 @@ class Router implements RouterInterface
     }
 
     /**
-     * @param RouteSpectificationInterface $routeSpecification
-     * @param null|int                     $offset
+     * @param null|RouteSpectificationInterface $routeSpecification
+     * @param null|int                          $offset
      *
      * @return null|Route
      */
-    public function match(RouteSpectificationInterface $routeSpecification, int $offset = null) : ?Route
+    public function match(RouteSpectificationInterface $routeSpecification = null, int $offset = null) : ?Route
     {
         $route = $this->getRouteCollection()->first($routeSpecification);
 

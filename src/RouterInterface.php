@@ -19,6 +19,11 @@ interface RouterInterface
      */
     public function getRouterContainer() : RouterContainerInterface;
 
+    /**
+     * @return RouterCacheInterface
+     */
+    public function getRouterCache() : RouterCacheInterface;
+
 
     /**
      * @return RouteCollection
@@ -44,12 +49,6 @@ interface RouterInterface
 
 
     /**
-     * @return RouterCacheInterface
-     */
-    public function getRouterCache() : RouterCacheInterface;
-
-
-    /**
      * @param mixed $source
      *
      * @return static
@@ -58,26 +57,28 @@ interface RouterInterface
 
 
     /**
-     * @param Route      $route
-     * @param null|mixed $payload
-     * @param mixed      ...$arguments
+     * @param Route $route
+     * @param mixed ...$arguments
      *
      * @return null|int|mixed
      */
-    public function handle(Route $route, $payload = null, ...$arguments);
+    public function handle(Route $route, ...$arguments);
 
 
     /**
-     * @param RouteSpectificationInterface $routeSpecification
+     * @param null|RouteSpectificationInterface $routeSpecification
+     * @param null|int                          $limit
+     * @param null|int                          $offset
      *
      * @return Route[]
      */
-    public function matchAll(RouteSpectificationInterface $routeSpecification) : array;
+    public function matchAll(RouteSpectificationInterface $routeSpecification = null, int $limit = null, int $offset = null) : array;
 
     /**
-     * @param RouteSpectificationInterface $routeSpecification
+     * @param null|RouteSpectificationInterface $routeSpecification
+     * @param null|int                          $offset
      *
      * @return null|Route
      */
-    public function match(RouteSpectificationInterface $routeSpecification) : ?Route;
+    public function match(RouteSpectificationInterface $routeSpecification = null, int $offset = null) : ?Route;
 }

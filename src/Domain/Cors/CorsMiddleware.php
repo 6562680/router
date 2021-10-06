@@ -14,7 +14,7 @@ class CorsMiddleware
     /**
      * @param HandlerInterface $next
      * @param Route            $route
-     * @param                  ...$arguments
+     * @param mixed            ...$arguments
      *
      * @return null|int|mixed
      */
@@ -31,7 +31,7 @@ class CorsMiddleware
     /**
      * @param HandlerInterface $next
      * @param Route            $route
-     * @param                  ...$arguments
+     * @param mixed            ...$arguments
      *
      * @return mixed
      */
@@ -43,15 +43,25 @@ class CorsMiddleware
             return $result;
         }
 
+        $headers = [
+            'Access-Control-Allow-Origin' => null,
+        ];
+
         if ($regexes = $cors->getAllowOrigins() ?? []) {
-            $headerOrigin = $_SERVER[ 'HTTP_ORIGIN' ] ?? null;
+            $httpOrigin = $_SERVER[ 'HTTP_ORIGIN' ] ?? null;
 
             foreach ( $regexes as $regex ) {
-                if (preg_match('^' . $regex . '$', $headerOrigin)) {
-                    header('Access-Control-Allow-Origin: ' . $headerOrigin);
+                if (preg_match('^' . $regex . '$', $httpOrigin)) {
+                    $headers[ 'Access-Control-Allow-Origin' ] = $httpOrigin;
 
                     break;
                 }
+            }
+        }
+
+        foreach ( $headers as $header => $value ) {
+            if (null !== $value) {
+                header($header . ': ' . $value);
             }
         }
 
@@ -61,7 +71,7 @@ class CorsMiddleware
     /**
      * @param HandlerInterface $next
      * @param Route            $route
-     * @param                  ...$arguments
+     * @param mixed            ...$arguments
      *
      * @return null|int
      */
@@ -73,69 +83,72 @@ class CorsMiddleware
             return $result;
         }
 
-        header('Access-Control-Allow-Methods: ', $route->getMethod() . ',OPTIONS');
+        $headers = [
+            'Access-Control-Allow-Methods'     => null,
+            'Access-Control-Allow-Credentials' => null,
+            'Access-Control-Allow-Origin'      => null,
+            'Access-Control-Allow-Headers'     => null,
+            'Access-Control-Expose-Headers'    => null,
+        ];
+
+        $headers[ 'Access-Control-Allow-Methods' ] = $route->getMethod() . ',OPTIONS';
 
         if ($cors->getAllowCredentials()) {
-            header('Access-Control-Allow-Credentials: true');
+            $headers[ 'Access-Control-Allow-Credentials' ] = 'true';
         }
 
         if ($regexes = $cors->getAllowOrigins() ?? []) {
-            $headerOrigin = $_SERVER[ 'HTTP_ORIGIN' ] ?? null;
+            $httpOrigin = $_SERVER[ 'HTTP_ORIGIN' ] ?? null;
 
             foreach ( $regexes as $regex ) {
-                if (preg_match('^' . $regex . '$', $headerOrigin)) {
-                    header('Access-Control-Allow-Origin: ' . $headerOrigin);
+                if (preg_match('^' . $regex . '$', $httpOrigin)) {
+                    $headers[ 'Access-Control-Allow-Origin' ] = $httpOrigin;
 
                     break;
                 }
             }
         }
 
-        if ($regexes = $cors->getAllowOrigins() ?? []) {
-            $headerOrigin = $_SERVER[ 'HTTP_ORIGIN' ] ?? null;
+        $regexesAllowHeaders = $cors->getAllowHeaders() ?? [];
+        $regexesExposeHeaders = $cors->getExposeHeaders() ?? [];
 
-            foreach ( $regexes as $regex ) {
-                if (preg_match('/^' . $regex . '$/', $headerOrigin)) {
-                    header('Access-Control-Allow-Origin: ' . $headerOrigin);
+        if ($regexesAllowHeaders || $regexesExposeHeaders) {
+            $httpAccessControlRequestHeaders = $_SERVER[ 'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' ] ?? '';
 
-                    break;
-                }
-            }
-        }
+            $array = array_map('trim',
+                explode(',', $httpAccessControlRequestHeaders)
+            );
 
-        if ($regexes = $cors->getAllowHeaders() ?? []) {
-            $corsHeaders = $_SERVER[ 'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' ] ?? '';
-            $corsHeaders = array_map('trim', explode(',', $corsHeaders));
-
-            $headers = [];
-            foreach ( $regexes as $regex ) {
-                foreach ( $corsHeaders as $corsHeader ) {
-                    if (preg_match('/^' . $regex . '$/', $corsHeader)) {
-                        $headers[] = $corsHeader;
+            $valuesAllowHeaders = [];
+            foreach ( $regexesAllowHeaders as $regex ) {
+                foreach ( $array as $item ) {
+                    if (preg_match('/^' . $regex . '$/', $item)) {
+                        $valuesAllowHeaders[] = $item;
                     }
                 }
             }
 
-            if ($headers = implode(',', $headers)) {
-                header('Access-Control-Allow-Headers: ' . $headers);
-            }
-        }
-
-        if ($regexes = $cors->getExposeHeaders() ?? []) {
-            $corsHeaders = $_SERVER[ 'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' ] ?? '';
-            $corsHeaders = array_map('trim', explode(',', $corsHeaders));
-
-            $headers = [];
-            foreach ( $regexes as $regex ) {
-                foreach ( $corsHeaders as $corsHeader ) {
-                    if (preg_match('/^' . $regex . '$/', $corsHeader)) {
-                        $headers[] = $corsHeader;
+            $valuesExposeHeaders = [];
+            foreach ( $regexesExposeHeaders as $regex ) {
+                foreach ( $array as $item ) {
+                    if (preg_match('/^' . $regex . '$/', $item)) {
+                        $valuesExposeHeaders[] = $item;
                     }
                 }
             }
 
-            if ($headers = implode(',', $headers)) {
-                header('Access-Control-Expose-Headers: ' . $headers);
+            if ($valuesAllowHeaders = implode(',', $valuesAllowHeaders)) {
+                $headers[ 'Access-Control-Allow-Headers' ] = $valuesAllowHeaders;
+            }
+
+            if ($valuesExposeHeaders = implode(',', $valuesExposeHeaders)) {
+                $headers[ 'Access-Control-Expose-Headers' ] = $valuesExposeHeaders;
+            }
+        }
+
+        foreach ( $headers as $header => $value ) {
+            if (null !== $value) {
+                header($header . ': ' . $value);
             }
         }
 

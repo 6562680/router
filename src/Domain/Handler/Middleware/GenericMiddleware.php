@@ -4,6 +4,7 @@ namespace Gzhegow\Router\Domain\Handler\Middleware;
 
 use Gzhegow\Router\Domain\Handler\TapHandler;
 use Gzhegow\Router\Domain\Handler\HandlerInterface;
+use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 use Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface;
 
 
@@ -37,6 +38,12 @@ class GenericMiddleware implements MiddlewareInterface
      */
     public function __construct($middleware, ActionProcessorInterface $actionProcessor)
     {
+        if ($actionProcessor->supportsAction($middleware)) {
+            throw new InvalidArgumentException(
+                [ 'Invalid middleware: %s', $middleware ]
+            );
+        }
+
         $this->middleware = $middleware;
 
         $this->actionProcessor = $actionProcessor;
@@ -44,17 +51,16 @@ class GenericMiddleware implements MiddlewareInterface
 
 
     /**
-     * @param mixed $payload
      * @param mixed ...$arguments
      *
      * @return HandlerInterface
      */
-    public function handle($payload, ...$arguments)
+    public function handle(...$arguments)
     {
         $next = $this->next
             ?? new TapHandler();
 
-        $result = $this->actionProcessor->processAction($this->middleware, $next, $payload, ...$arguments);
+        $result = $this->actionProcessor->processAction($this->middleware, $next, ...$arguments);
 
         return $result;
     }

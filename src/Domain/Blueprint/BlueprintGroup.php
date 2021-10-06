@@ -203,9 +203,7 @@ class BlueprintGroup extends AbstractBlueprint
             && is_string($action)
             && ! is_callable($action)
         ) {
-            $action = $this->namespace . '\\' . ltrim($action, '\\');
-
-            $route->action($action);
+            $route->action($this->namespace . '\\' . ltrim($action, '\\'));
         }
 
         if (null !== $this->endpoint) {
@@ -226,23 +224,25 @@ class BlueprintGroup extends AbstractBlueprint
 
         if ($this->bindings) {
             $route->bindings([]
-                + $route->getBindings()
-                + $this->bindings
+                + $route->getBindings() // 1
+                + $this->bindings // 2
             );
         }
 
         if ($this->middlewares) {
             $route->middlewares(
-                array_unique(array_merge($this->middlewares,
-                    $route->getMiddlewares(),
+                array_unique(array_merge([],
+                    $this->middlewares, // 1
+                    $route->getMiddlewares(), // 2
                 ))
             );
         }
 
         if ($this->tags) {
             $route->tags(
-                array_unique(array_merge($this->tags,
-                    $route->getTags(),
+                array_unique(array_merge([],
+                    $this->tags, // 1
+                    $route->getTags(), // 2
                 ))
             );
         }

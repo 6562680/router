@@ -86,11 +86,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function get($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_GET, $endpoint, $action, $name);
+        return $this->route('GET', $endpoint, $action, $name);
     }
 
     /**
@@ -98,11 +98,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function post($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_POST, $endpoint, $action, $name);
+        return $this->route('POST', $endpoint, $action, $name);
     }
 
     /**
@@ -110,11 +110,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function put($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_PUT, $endpoint, $action, $name);
+        return $this->route('PUT', $endpoint, $action, $name);
     }
 
     /**
@@ -126,7 +126,7 @@ class BlueprintManager
      */
     public function patch($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_PATCH, $endpoint, $action, $name);
+        return $this->route('PATCH', $endpoint, $action, $name);
     }
 
     /**
@@ -134,11 +134,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function delete($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_DELETE, $endpoint, $action, $name);
+        return $this->route('DELETE', $endpoint, $action, $name);
     }
 
     /**
@@ -146,11 +146,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function purge($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_PURGE, $endpoint, $action, $name);
+        return $this->route('PURGE', $endpoint, $action, $name);
     }
 
 
@@ -159,11 +159,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function head($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_HEAD, $endpoint, $action, $name);
+        return $this->route('HEAD', $endpoint, $action, $name);
     }
 
     /**
@@ -171,11 +171,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function options($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_OPTIONS, $endpoint, $action, $name);
+        return $this->route('OPTIONS', $endpoint, $action, $name);
     }
 
 
@@ -184,11 +184,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function trace($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_TRACE, $endpoint, $action, $name);
+        return $this->route('TRACE', $endpoint, $action, $name);
     }
 
     /**
@@ -196,11 +196,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function connect($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_CONNECT, $endpoint, $action, $name);
+        return $this->route('CONNECT', $endpoint, $action, $name);
     }
 
 
@@ -209,11 +209,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function cli($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_CLI, $endpoint, $action, $name);
+        return $this->route('CLI', $endpoint, $action, $name);
     }
 
 
@@ -222,11 +222,11 @@ class BlueprintManager
      * @param mixed      $action
      * @param null|mixed $name
      *
-     * @return static
+     * @return Blueprint
      */
     public function sock($endpoint, $action, string $name = null) : Blueprint
     {
-        return $this->route(Blueprint::METHOD_SOCK, $endpoint, $action, $name);
+        return $this->route('SOCK', $endpoint, $action, $name);
     }
 
 

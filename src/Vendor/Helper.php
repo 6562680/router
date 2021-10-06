@@ -12,41 +12,6 @@ use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 class Helper
 {
     /**
-     * @param string|\SplFileInfo $pathOrSpl
-     *
-     * @return null|string
-     */
-    public static function pathFilePhpVal($pathOrSpl) : ?string
-    {
-        if ($spl = static::filterSplFilePhp($pathOrSpl)) {
-            return $spl->getRealPath();
-        }
-
-        if ($path = static::filterPathFilePhp($pathOrSpl)) {
-            return realpath($path);
-        }
-
-        return null;
-    }
-
-    /**
-     * @param string|\SplFileInfo $pathOrSpl
-     *
-     * @return null|string
-     */
-    public static function thePathFilePhpVal($pathOrSpl) : ?string
-    {
-        if (null === ( $path = static::pathFilePhpVal($pathOrSpl) )) {
-            throw new InvalidArgumentException(
-                [ 'Invalid file or spl: %s', $pathOrSpl ]
-            );
-        }
-
-        return $path;
-    }
-
-
-    /**
      * @param array|callable $callableArray
      *
      * @return null|array
@@ -56,24 +21,6 @@ class Helper
         if (is_array($callableArray)
             && isset($callableArray[ 0 ]) && is_object($callableArray[ 0 ])
             && isset($callableArray[ 1 ]) && is_string($callableArray[ 1 ]) && ( '' !== $callableArray[ 1 ] )
-            && is_callable($callableArray)
-        ) {
-            return $callableArray;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param array|callable $callableArray
-     *
-     * @return null|array
-     */
-    public static function filterCallableArrayStatic($callableArray) : ?array
-    {
-        if (is_array($callableArray)
-            && isset($callableArray[ 1 ]) && is_string($callableArray[ 1 ]) && ( '' !== $callableArray[ 1 ] )
-            && isset($callableArray[ 0 ]) && class_exists($callableArray[ 0 ])
             && is_callable($callableArray)
         ) {
             return $callableArray;
@@ -131,22 +78,6 @@ class Helper
     }
 
     /**
-     * @param string $filepath
-     *
-     * @return null|string
-     */
-    public static function filterPathDirectory($filepath) : ?string
-    {
-        if (! ( is_string($filepath)
-            && is_dir($filepath)
-        )) {
-            return null;
-        }
-
-        return $filepath;
-    }
-
-    /**
      * @param \SplFileInfo $spl
      *
      * @return null|\SplFileInfo
@@ -162,6 +93,20 @@ class Helper
         return $spl;
     }
 
+    /**
+     * @param string $filepath
+     *
+     * @return null|string
+     */
+    public static function filterPathDirectory($filepath) : ?string
+    {
+        if (! ( is_string($filepath) && is_dir($filepath) )) {
+            return null;
+        }
+
+        return $filepath;
+    }
+
 
     /**
      * @param string|\SplFileInfo $pathOrSpl
@@ -173,23 +118,6 @@ class Helper
         return null
             ?? static::filterSplFilePhp($pathOrSpl)
             ?? static::filterPathFilePhp($pathOrSpl);
-    }
-
-    /**
-     * @param string $filepath
-     *
-     * @return null|string
-     */
-    public static function filterPathFilePhp($filepath) : ?string
-    {
-        if (! ( is_string($filepath)
-            && is_file($filepath)
-            && ( 'php' === pathinfo($filepath, PATHINFO_EXTENSION) )
-        )) {
-            return null;
-        }
-
-        return $filepath;
     }
 
     /**
@@ -207,6 +135,22 @@ class Helper
         }
 
         return $spl;
+    }
+
+    /**
+     * @param string $filepath
+     *
+     * @return null|string
+     */
+    public static function filterPathFilePhp($filepath) : ?string
+    {
+        if (! ( is_string($filepath) && is_file($filepath)
+            && ( 'php' === pathinfo($filepath, PATHINFO_EXTENSION) )
+        )) {
+            return null;
+        }
+
+        return $filepath;
     }
 
 
@@ -232,6 +176,41 @@ class Helper
     /**
      * @param string|\SplFileInfo $pathOrSpl
      *
+     * @return null|string
+     */
+    public static function realpath($pathOrSpl) : ?string
+    {
+        if ($spl = static::filterSplFilePhp($pathOrSpl)) {
+            return $spl->getRealPath();
+        }
+
+        if ($path = static::filterPathFilePhp($pathOrSpl)) {
+            return realpath($path);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param string|\SplFileInfo $pathOrSpl
+     *
+     * @return null|string
+     */
+    public static function theRealpath($pathOrSpl) : ?string
+    {
+        if (null === ( $path = static::realpath($pathOrSpl) )) {
+            throw new InvalidArgumentException(
+                [ 'Invalid file or spl: %s', $pathOrSpl ]
+            );
+        }
+
+        return $path;
+    }
+
+
+    /**
+     * @param string|\SplFileInfo $pathOrSpl
+     *
      * @return array
      */
     public static function extractClassesFromFile($pathOrSpl) : array
@@ -240,7 +219,7 @@ class Helper
 
         $_cache = $_cache ?? [];
 
-        $filepath = Helper::thePathFilePhpVal($pathOrSpl);
+        $filepath = Helper::theRealpath($pathOrSpl);
 
         if (! isset($_cache[ $filepath ])) {
             $code = [];
