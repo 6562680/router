@@ -17,7 +17,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 
 $configuration = ( new Configuration() )
-    // ->setCache(null) // \Psr\SimpleCache\CacheInterface
+    // ->setCache(null) // Psr\SimpleCache\CacheInterface
     // ->setContainer(null) // \Psr\Container\ContainerInterface
     // ->setRouterFactory(null) // \Gzhegow\Router\RouterFactoryInterface
     // ->setRouteCompiler(null) // \Gzhegow\Router\Service\RouteCompiler\RouteCompilerInterface
@@ -32,11 +32,12 @@ $router = new Router($configuration);
 $router
     ->getMiddlewareCollection()
     ->addMiddlewareAlias('test', TestMiddleware::class)
-    ->addMiddlewareGroup('@api', [
-        'test', // using previously declared alias
+    ->addMiddlewareGroup('@api', [])
+    ->addMiddlewareGroup('@cli', [
+        TestMiddleware::class,
     ])
     ->addMiddlewareGroup('@web', [
-        TestMiddleware::class, // using another `action`
+        'test', // using previously declared alias,
     ]);
 
 // adding custom wildcards to use inside routes
@@ -46,51 +47,77 @@ $router
     ->addPattern('id', '[0-9]+')
     ->addPattern('controller', '(?:[^\/]+\/)+(?=[^\/]+)')
     ->addPattern('action', '[^\/]+(?=|$)');
-    
-$manager = ( new BlueprintManager() )
-    // setting namespace for all route actions that are strings and not callables
-    ->namespace('Gzhegow\Router\Tests\Classes')
-    // setting cors headers for all routes in the group
-    ->cors(function (CorsBuilder $cors) {
-        return $cors
-          ->allowCredentials(true)
-          ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
-          ->allowHeaders([ 'Authorization', 'X-(.+)' ])
-          ->exposeHeaders([ 'X-(.+)' ]);
-    })
-    // using loader to get routes, for example: \Closure function or filepath or directory path
-    ->group(function () use ($manager) {
-        $manager
-            ->group(function () use ($manager) {
-                $manager->get('/login', 'TestUserController@login')->name('login');
-                $manager->post('/login', 'TestUserController@loginPost')->name('loginPost');
-            });
-
-        $manager
-            // adding name prefix to all routes in the group
-            ->name('users.')
-            // adding endpoint prefix to all routes in the group
-            ->endpoint('/users')
-            // adding middlewares for all routes in the group
-            ->middlewares([ '@api' ])
-            ->group(function () use ($manager) {
-                $manager->get('/', 'TestUserController@index')->name('index');
-                $manager->post('/', 'TestUserController@post')->name('post');
-
-                $manager->get('/{id}', 'TestUserController@get')->name('get');
-                $manager->put('/{id}', 'TestUserController@put')->name('put');
-                $manager->delete('/{id}', 'TestUserController@delete')->name('delete');
-            });
-    });    
 
 // using cache, if provided in Configuration
 // otherwise won't remember
-$router->remember(function () use ($router, $manager) {
-    // using loader to load our custom manager, you can write your own manager for that
-    // also you can write annotation reader to read controller classes directly
+$router->remember(function () use ($router) {
+    $manager = new BlueprintManager();
+
+    $manager
+        // setting namespace for all route actions that are strings and not callables
+        ->namespace('Gzhegow\Router\Tests\Classes')
+        ->group(function () use ($manager) {
+            $manager
+                ->middlewares([ '@api' ])
+                ->name('api.')
+                ->endpoint('api')
+                // setting cors headers for all routes in the group
+                ->cors(function (CorsBuilder $cors) {
+                    $cors
+                        ->allowCredentials(true)
+                        ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
+                        ->allowHeaders([ 'Authorization', 'X-(.+)' ])
+                        ->exposeHeaders([ 'X-(.+)' ]);
+                })
+                // using loader to get routes, for example: \Closure function or filepath or directory path
+                ->group(function () use ($manager) {
+                    $manager
+                        ->name('users.')
+                        ->endpoint('/users')
+                        ->group(function () use ($manager) {
+                            $manager->get('', 'TestUserController@index')->name('index');
+                            $manager->post('', 'TestUserController@post')->name('post');
+
+                            $manager->get('{id}', 'TestUserController@get')->name('get');
+                            $manager->put('{id}', 'TestUserController@put')->name('put');
+                            $manager->delete('{id}', 'TestUserController@delete')->name('delete');
+                        });
+                });
+
+            $manager
+                ->middlewares([ '@cli' ])
+                ->name('cli.')
+                ->group(function () use ($manager) {
+                    $manager
+                        ->name('users.')
+                        ->group(function () use ($manager) {
+                            $manager->cli([
+                                'users:dump',
+                                '{users* : Comma separated list of user ids}',
+                            ], 'TestUserController@dump')->name('dump');
+
+                            $manager->cli([
+                                'users:load',
+                                '{--force|f : Forces non-interactive mode}',
+                            ], 'TestUserController@load')->name('load');
+                        });
+                });
+
+            $manager
+                ->middlewares([ '@web' ])
+                ->name('web.')
+                ->group(function () use ($manager) {
+                    $manager
+                        ->name('users.')
+                        ->group(function () use ($manager) {
+                            $manager->get('login', 'TestUserController@login')->name('login');
+                            $manager->post('login', 'TestUserController@loginPost')->name('loginPost');
+                        });
+                });
+        });
+
     $router->load($manager);
 
-    // return main route collection to be cached
     return $router->getRouteCollection();
 });
 
@@ -98,14 +125,14 @@ $router->remember(function () use ($router, $manager) {
 // 1. from $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']
 // 2. from $_SERVER['HTTP_METHOD']
 $routeSpecification = ( new HttpRouteSpecification() )
-    ->urlAddress('/users/1')
-    // ->httpMethod('GET')
-    ;
+    ->httpMethod('GET')
+    ->urlAddress('/api/users/1');
 
 // using Specification pattern to search routes inside collection
 $route = $router->match($routeSpecification);
 
-// setting custom bindings (usually it works inside middlewares where you get some AR-models from database)
+// setting custom bindings
+// usually it works inside middlewares where you get some AR-models from database
 $route->addBindings([ 'key' => 'value' ]);
 
 // you can pass any arguments, like ServerRequestInterface or maybe ConsoleInput
@@ -118,31 +145,21 @@ $result = $router->handle($route, ...$arguments);
 
 var_export($route);
 /**
- * Gzhegow\Router\Domain\Route\Route::__set_state([
- *   'method' => 'GET',
- *   'action' => 'Gzhegow\\Router\\Tests\\Classes\\TestUserController@index',
- *   'endpoint' => '/users/',
- *   'endpointRegex' => '/users/',
- *   'name' => 'users.index',
- *   'description' => NULL,
- *   'bindings' => [],
- *   'middlewares' => [
- *     'Gzhegow\\Router\\Domain\\Cors\\CorsMiddleware' => 'Gzhegow\\Router\\Domain\\Cors\\CorsMiddleware',
- *     '@api' => '@api',
- *   ],
- *   'tags' => [],
- *   'cors' => Gzhegow\Router\Domain\Cors\Cors::__set_state([
- *     'allowOrigins' => NULL,
- *     'allowHeaders' => NULL,
- *     'exposeHeaders' => NULL,
- *     'allowCredentials' => NULL,
- *     'maxAge' => NULL,
- *   ]),
- * ]);
+ * Gzhegow\Router\Domain\Route\Route::__set_state(array(
+ *    'method' => 'GET',
+ *    'action' => 'Gzhegow\\Router\\Tests\\Classes\\TestUserController@get',
+ *    'endpoint' => Gzhegow\Router\Domain\Endpoint\Endpoint::__set_state(array(
+ *      'value' => 'api/users/{id}',
+ *      'regex' => '/^api\\/users\\/(?P<id>[0-9]+)$/u',
+ *    )),
+ *    'signature' => NULL,
+ *    'name' => 'api.users.get',
+ *    'description' => NULL,
+ *    'bindings' => NULL,
+ *    'middlewares' => array (
+ *      '@api' => '@api',
+ *    ),
+ *    'tags' => NULL,
+ * ));
  */
-``` 
-
-## Todo
-
-1. (?) CLI compiler like Laravel
-2. (?) Several separators for each route type? Overengineering
+```
