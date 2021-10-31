@@ -4,6 +4,7 @@
 namespace Gzhegow\Router\Service\RouteCompiler;
 
 use Gzhegow\Router\Domain\Blueprint\Blueprint;
+use Gzhegow\Router\Domain\Cors\CorsMiddleware;
 
 
 /**
@@ -12,23 +13,6 @@ use Gzhegow\Router\Domain\Blueprint\Blueprint;
 class CorsRouteCompiler implements RouteCompilerInterface
 {
     /**
-     * @var mixed
-     */
-    protected $corsMiddleware;
-
-
-    /**
-     * Constructor
-     *
-     * @param mixed $corsMiddleware
-     */
-    public function __construct($corsMiddleware)
-    {
-        $this->corsMiddleware = $corsMiddleware;
-    }
-
-
-    /**
      * @param Blueprint $route
      *
      * @return void
@@ -36,7 +20,8 @@ class CorsRouteCompiler implements RouteCompilerInterface
     public function compileRoute($route) : void
     {
         $middlewares = $route->getMiddlewares();
-        array_unshift($middlewares, $this->corsMiddleware);
+
+        array_unshift($middlewares, CorsMiddleware::class);
 
         $route->middlewares(null);
         $route->middlewares($middlewares);

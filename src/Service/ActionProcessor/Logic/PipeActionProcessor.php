@@ -1,15 +1,15 @@
 <?php
 
 
-namespace Gzhegow\Router\Service\ActionProcessor\Collection;
+namespace Gzhegow\Router\Service\ActionProcessor\Logic;
 
 use Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface;
 
 
 /**
- * CaseActionProcessor
+ * PipeActionProcessor
  */
-class CaseActionProcessor implements ActionProcessorInterface
+class PipeActionProcessor implements ActionProcessorInterface
 {
     /**
      * @var ActionProcessorInterface[]
@@ -42,13 +42,13 @@ class CaseActionProcessor implements ActionProcessorInterface
      */
     public function processAction($action, ...$arguments)
     {
-        $result = null;
+        $result = null !== key($arguments)
+            ? array_shift($arguments)
+            : null;
 
         foreach ( $this->actionProcessors as $child ) {
             if ($child->supportsAction($action)) {
-                $result = $child->processAction($action, ...$arguments);
-
-                break;
+                $result = $child->processAction($action, $result, ...$arguments);
             }
         }
 

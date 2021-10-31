@@ -38,7 +38,7 @@ class GenericMiddleware implements MiddlewareInterface
      */
     public function __construct($middleware, ActionProcessorInterface $actionProcessor)
     {
-        if ($actionProcessor->supportsAction($middleware)) {
+        if (! $actionProcessor->supportsAction($middleware)) {
             throw new InvalidArgumentException(
                 [ 'Invalid middleware: %s', $middleware ]
             );

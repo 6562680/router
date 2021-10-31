@@ -4,23 +4,24 @@
 namespace Gzhegow\Router\Domain\Route\Specification;
 
 use Gzhegow\Router\Domain\Route\Route;
+use Gzhegow\Router\Domain\Route\RouteCollection;
+use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 use Gzhegow\Router\Exceptions\Runtime\BadMethodCallException;
 
 
 /**
  * HttpRouteSpecification
  */
-class HttpRouteSpecification implements RouteSpectificationInterface
+class HttpRouteSpecification implements RouteSpecificationInterface
 {
     /**
      * @var string
      */
-    protected $urlAddress;
-
-    /**
-     * @var null|string
-     */
     protected $httpMethod;
+    /**
+     * @var string
+     */
+    protected $urlAddress;
 
 
     /**
@@ -38,6 +39,14 @@ class HttpRouteSpecification implements RouteSpectificationInterface
     /**
      * @return string
      */
+    public function getHttpMethod() : string
+    {
+        return $this->httpMethod;
+    }
+
+    /**
+     * @return string
+     */
     public function getUrlAddress() : string
     {
         return $this->urlAddress;
@@ -45,57 +54,102 @@ class HttpRouteSpecification implements RouteSpectificationInterface
 
 
     /**
-     * @return null|string
+     * @param RouteCollection $routeCollection
+     *
+     * @return array
      */
-    public function getHttpMethod() : ?string
+    public function matches(RouteCollection $routeCollection) : array
     {
-        return $this->httpMethod;
-    }
+        if (null === $this->httpMethod) {
+            throw new BadMethodCallException(
+                [ 'Specification requires defined `httpMethod`: %s', $this ]
+            );
+        }
 
+        if (null === $this->urlAddress) {
+            throw new BadMethodCallException(
+                [ 'Specification requires defined `urlAddress`: %s', $this ]
+            );
+        }
+
+        $routes = [];
+
+        $rows = $routeCollection->getRoutes();
+
+        if ($this->httpMethod) {
+            $index = $routeCollection->getRoutesIndexByName('method');
+
+            foreach ( $index[ $this->httpMethod ] ?? [] as $id => $bool ) {
+                $routes[] = $rows[ $id ];
+            }
+
+        } else {
+            $routes = $rows;
+        }
+
+        return $routes;
+    }
 
     /**
      * @param Route $route
      *
-     * @return bool
+     * @return null|Route
      */
-    public function isMatch(Route $route) : bool
+    public function match(Route $route) : ?Route
     {
-        if (null === $this->urlAddress) {
-            throw new BadMethodCallException(
-                [ 'This specification requires URL address' ],
-            );
-        }
-
-        $isMethodEmpty = null === $this->httpMethod;
-        $isMethodMatch = $this->httpMethod === $route->getMethod();
-        if (! ( $isMethodEmpty || $isMethodMatch )) {
-            return false;
-        }
-
-        $regex = $route->getEndpointRegex();
         $endpoint = $route->getEndpoint();
+        $endpointValue = $endpoint->getValue();
+        $endpointRegex = $endpoint->getRegex();
 
-        $isMatch = false
-            || ( $regex && preg_match($regex, $this->urlAddress, $matches) )
-            || ( $endpoint && $endpoint === $this->urlAddress );
+        $matches = [];
+        $isUrlAddressMatch = false
+            || ( $endpointRegex && preg_match($endpointRegex, $this->urlAddress, $matches) )
+            || ( $endpointValue && $endpointValue === $this->urlAddress );
 
-        if (! $isMatch) {
-            return false;
+        if (! $isUrlAddressMatch) {
+            return null;
         }
+
+        // ! deep clone
+        $routeMatched = unserialize(serialize($route));
 
         $bindings = [];
-        $matches = $matches ?? [];
-        foreach ( $matches as $idx => $value ) {
-            if (is_string($idx)) {
-                $bindings[ $idx ] = $value;
+
+        if ($matches) {
+            foreach ( $matches as $idx => $value ) {
+                if (is_string($idx) && $idx) {
+                    $bindings[ $idx ] = $value;
+                }
             }
         }
 
-        $route->addBindings($bindings);
+        if ($bindings) {
+            $routeMatched->addBindings($bindings);
+        }
 
-        return true;
+        return $routeMatched;
     }
 
+
+    /**
+     * @param string $httpMethod
+     *
+     * @return static
+     */
+    public function httpMethod(string $httpMethod)
+    {
+        $httpMethod = strtoupper(trim($httpMethod));
+
+        if (! strlen($httpMethod)) {
+            throw new InvalidArgumentException(
+                [ 'Invalid HttpMethod: %s', $httpMethod ]
+            );
+        }
+
+        $this->httpMethod = $httpMethod;
+
+        return $this;
+    }
 
     /**
      * @param string $urlAddress
@@ -104,26 +158,9 @@ class HttpRouteSpecification implements RouteSpectificationInterface
      */
     public function urlAddress(string $urlAddress)
     {
-        $urlAddress = '/' . ltrim(trim($urlAddress), '/');
+        $urlAddress = ltrim(trim($urlAddress), '/');
 
         $this->urlAddress = $urlAddress;
-
-        return $this;
-    }
-
-
-    /**
-     * @param null|string $httpMethod
-     *
-     * @return static
-     */
-    public function httpMethod(?string $httpMethod)
-    {
-        if (null !== $httpMethod) {
-            $httpMethod = strtoupper(trim($httpMethod));
-        }
-
-        $this->httpMethod = $httpMethod;
 
         return $this;
     }

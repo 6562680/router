@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Gzhegow\Router\Service\RouteLoader\Collection;
+namespace Gzhegow\Router\Service\RouteLoader\Logic;
 
 use Gzhegow\Router\Domain\Route\RouteCollection;
 use Gzhegow\Router\Service\RouteLoader\RouteLoaderInterface;
@@ -36,26 +36,25 @@ class CaseRouteLoader implements RouteLoaderInterface
 
 
     /**
-     * @param mixed                $source
-     * @param null|RouteCollection $collection
+     * @param mixed       $source
+     * @param null|object $newthis
      *
      * @return RouteCollection
      */
-    public function loadSource($source, RouteCollection $collection = null) : RouteCollection
+    public function loadSource($source, object $newthis = null) : RouteCollection
     {
-        $routeCollection = new RouteCollection();
+        $collection = new RouteCollection();
 
         foreach ( $this->routeLoaders as $child ) {
             if ($child->supportsSource($source)) {
-                $collection = $child->loadSource($source, $collection);
+                $childCollection = $child->loadSource($source, $newthis);
 
-                foreach ( $collection->getRoutes() as $route ) {
-                    $routeCollection->addRoute($route);
-                }
+                $collection->merge($childCollection);
+                break;
             }
         }
 
-        return $routeCollection;
+        return $collection;
     }
 
 

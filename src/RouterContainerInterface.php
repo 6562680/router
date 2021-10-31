@@ -17,9 +17,9 @@ use Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface;
 interface RouterContainerInterface extends ContainerInterface
 {
     /**
-     * @return RouterFactoryInterface
+     * @return RouterCacheInterface
      */
-    public function getRouterFactory() : RouterFactoryInterface;
+    public function getRouterCache() : RouterCacheInterface;
 
 
     /**
@@ -37,12 +37,6 @@ interface RouterContainerInterface extends ContainerInterface
      * @return ActionProcessorInterface
      */
     public function getActionProcessor() : ActionProcessorInterface;
-
-
-    /**
-     * @return mixed
-     */
-    public function getCorsMiddleware();
 
 
     /**

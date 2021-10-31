@@ -11,20 +11,20 @@ use Gzhegow\Router\Domain\Cors\CorsBuilder;
 abstract class AbstractBlueprint
 {
     /**
-     * @var null|string
+     * @var string
      */
     protected $endpoint;
     /**
-     * @var null|string
+     * @var string
      */
-    protected $endpointRegex;
+    protected $signature;
 
     /**
-     * @var null|string
+     * @var string
      */
     protected $name;
     /**
-     * @var null|string
+     * @var string
      */
     protected $description;
 
@@ -58,9 +58,9 @@ abstract class AbstractBlueprint
     /**
      * @return null|string
      */
-    public function getEndpointRegex() : ?string
+    public function getSignature() : ?string
     {
-        return $this->endpointRegex;
+        return $this->signature;
     }
 
 
@@ -128,13 +128,13 @@ abstract class AbstractBlueprint
     }
 
     /**
-     * @param null|string $endpointRegex
+     * @param null|string $signature
      *
      * @return static
      */
-    public function endpointRegex(?string $endpointRegex)
+    public function signature(?string $signature)
     {
-        $this->endpointRegex = $endpointRegex;
+        $this->signature = $signature;
 
         return $this;
     }

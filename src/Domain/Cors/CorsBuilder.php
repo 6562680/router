@@ -2,7 +2,6 @@
 
 namespace Gzhegow\Router\Domain\Cors;
 
-
 use Gzhegow\Router\Vendor\Helper;
 use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 
@@ -38,30 +37,30 @@ class CorsBuilder
 
 
     /**
-     * @param mixed $cors
+     * @param mixed $from
      *
      * @return static
      */
-    public static function from($cors)
+    public static function from($from)
     {
-        if ($cors instanceof static) {
-            $value = $cors;
+        if ($from instanceof static) {
+            $instance = $from;
 
-        } elseif (is_callable($cors)) {
-            $value = new static();
+        } elseif (is_callable($from)) {
+            $instance = new static();
 
-            $result = $cors($value);
-            if ($result instanceof CorsBuilder) {
-                $value = $result;
+            $result = $from($instance);
+            if ($result instanceof static) {
+                $instance = $result;
             }
 
         } else {
             throw new InvalidArgumentException(
-                [ 'Invalid CORS: %s', $cors ]
+                [ 'Invalid CORS: %s', $from ]
             );
         }
 
-        return $value;
+        return $instance;
     }
 
 
@@ -70,15 +69,13 @@ class CorsBuilder
      */
     public function build() : Cors
     {
-        return new Cors(
-            $this->allowOrigins,
-
-            $this->allowHeaders,
-            $this->exposeHeaders,
-
-            $this->allowCredentials,
-            $this->maxAge
-        );
+        return new Cors([
+            'allowOrigins'     => $this->allowOrigins,
+            'allowHeaders'     => $this->allowHeaders,
+            'exposeHeaders'    => $this->exposeHeaders,
+            'allowCredentials' => $this->allowCredentials,
+            'maxAge'           => $this->maxAge,
+        ]);
     }
 
 
@@ -148,7 +145,7 @@ class CorsBuilder
                 : [ $allowOrigins ];
 
             foreach ( $allowOrigins as $allowOrigin ) {
-                if (! Helper::filterRegexShort($allowOrigin)) {
+                if (null === Helper::filterRegexShort($allowOrigin)) {
                     $allowOrigin = preg_quote($allowOrigin, '/');
                 }
 
@@ -184,7 +181,7 @@ class CorsBuilder
             foreach ( $allowHeaders as $allowHeader ) {
                 $value = strtolower($allowHeader);
 
-                if (! Helper::filterRegexShort($value)) {
+                if (null === Helper::filterRegexShort($value)) {
                     $value = preg_quote($value, '/');
                 }
 
@@ -223,7 +220,7 @@ class CorsBuilder
             foreach ( $exposeHeaders as $exposeHeader ) {
                 $value = strtolower($exposeHeader);
 
-                if (! Helper::filterRegexShort($value)) {
+                if (null === Helper::filterRegexShort($value)) {
                     $value = preg_quote($value, '/');
                 }
 

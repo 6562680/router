@@ -2,6 +2,7 @@
 
 namespace Gzhegow\Router\Domain\Cors;
 
+use Gzhegow\Router\RouterInterface;
 use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\Domain\Handler\HandlerInterface;
 
@@ -13,36 +14,50 @@ class CorsMiddleware
 {
     /**
      * @param HandlerInterface $next
-     * @param Route            $route
+     *
+     * @param RouterInterface  $router
+     *
      * @param mixed            ...$arguments
      *
      * @return null|int|mixed
      */
-    public function __invoke(HandlerInterface $next, Route $route, ...$arguments)
+    public function __invoke(HandlerInterface $next,
+        RouterInterface $router,
+        ...$arguments
+    )
     {
+        $cors = $router->getCorsCurrent();
+        $route = $router->getRouteCurrent();
+
+        if (! $cors) {
+            $result = $next->handle(...$arguments);
+
+            return $result;
+        }
+
         $isPreflight = 'OPTIONS' === strtoupper($_SERVER[ 'REQUEST_METHOD' ] ?? '');
 
-        return null
-            ?? ( $isPreflight ? $this->handlePreflight($next, $route, ...$arguments) : null )
-            ?? $this->handle($next, $route, ...$arguments);
+        return $isPreflight
+            ? $this->handlePreflight($next, $route, $cors, ...$arguments)
+            : $this->handleRequest($next, $route, $cors, ...$arguments);
     }
 
 
     /**
      * @param HandlerInterface $next
+     *
      * @param Route            $route
+     * @param Cors             $cors
+     *
      * @param mixed            ...$arguments
      *
      * @return mixed
      */
-    protected function handle(HandlerInterface $next, Route $route, ...$arguments)
+    protected function handleRequest(HandlerInterface $next,
+        Route $route, Cors $cors,
+        ...$arguments
+    )
     {
-        if (! $cors = $route->getCors()) {
-            $result = $next->handle(...$arguments) ?? 0;
-
-            return $result;
-        }
-
         $headers = [
             'Access-Control-Allow-Origin' => null,
         ];
@@ -65,24 +80,26 @@ class CorsMiddleware
             }
         }
 
-        return $next->handle(...$arguments);
+        $result = $next->handle(...$arguments);
+
+        return $result;
     }
 
     /**
      * @param HandlerInterface $next
+     *
      * @param Route            $route
+     * @param Cors             $cors
+     *
      * @param mixed            ...$arguments
      *
      * @return null|int
      */
-    protected function handlePreflight(HandlerInterface $next, Route $route, ...$arguments)
+    protected function handlePreflight(HandlerInterface $next,
+        Route $route, Cors $cors,
+        ...$arguments
+    )
     {
-        if (! $cors = $route->getCors()) {
-            $result = $next->handle(...$arguments) ?? 0;
-
-            return $result;
-        }
-
         $headers = [
             'Access-Control-Allow-Methods'     => null,
             'Access-Control-Allow-Credentials' => null,

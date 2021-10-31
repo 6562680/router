@@ -20,10 +20,10 @@ interface RouteLoaderInterface
 
 
     /**
-     * @param mixed                $source
-     * @param null|RouteCollection $collection
+     * @param mixed       $source
+     * @param null|object $newthis
      *
      * @return RouteCollection
      */
-    public function loadSource($source, RouteCollection $collection = null) : RouteCollection;
+    public function loadSource($source, object $newthis = null) : RouteCollection;
 }

@@ -15,27 +15,27 @@ class DirectoryRouteLoader implements RouteLoaderInterface
     /**
      * @var RouteLoaderInterface
      */
-    protected $fileRouteLoader;
+    protected $routeLoader;
 
 
     /**
      * Constructor
      *
-     * @param RouteLoaderInterface $fileRouteLoader
+     * @param RouteLoaderInterface $routeLoader
      */
-    public function __construct(RouteLoaderInterface $fileRouteLoader)
+    public function __construct(RouteLoaderInterface $routeLoader)
     {
-        $this->fileRouteLoader = $fileRouteLoader;
+        $this->routeLoader = $routeLoader;
     }
 
 
     /**
-     * @param mixed                $source
-     * @param null|RouteCollection $collection
+     * @param string|\SplFileInfo $source
+     * @param null|object         $newthis
      *
      * @return RouteCollection
      */
-    public function loadSource($source, RouteCollection $collection = null) : RouteCollection
+    public function loadSource($source, object $newthis = null) : RouteCollection
     {
         $collection = $collection ?? new RouteCollection();
 
@@ -43,8 +43,8 @@ class DirectoryRouteLoader implements RouteLoaderInterface
         $iit = new \RecursiveIteratorIterator($it);
 
         foreach ( $iit as $spl ) {
-            if ($this->fileRouteLoader->supportsSource($spl)) {
-                $childCollection = $this->fileRouteLoader->loadSource($spl, $collection);
+            if ($this->routeLoader->supportsSource($spl)) {
+                $childCollection = $this->routeLoader->loadSource($spl, $newthis);
 
                 $collection->addRoutes($childCollection->getRoutes());
             }
@@ -61,19 +61,6 @@ class DirectoryRouteLoader implements RouteLoaderInterface
      */
     public function supportsSource($source) : bool
     {
-        if (null === Helper::filterDirectory($source)) {
-            return false;
-        }
-
-        $it = new \RecursiveDirectoryIterator($source);
-        $iit = new \RecursiveIteratorIterator($it);
-
-        foreach ( $iit as $spl ) {
-            if ($this->fileRouteLoader->supportsSource($spl)) {
-                return true;
-            }
-        }
-
-        return false;
+        return (bool) Helper::filterDirectory($source);
     }
 }

@@ -5,6 +5,7 @@ namespace Gzhegow\Router\Domain\Blueprint;
 
 use Gzhegow\Router\Domain\Cors\CorsBuilder;
 use Gzhegow\Router\Service\RouteLoader\RouteLoaderInterface;
+use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 use Gzhegow\Router\Exceptions\Runtime\UnexpectedValueException;
 
 
@@ -20,15 +21,16 @@ class BlueprintManager
     /**
      * @var Blueprint[]
      */
-    protected $routes = [];
+    protected $blueprints = [];
 
 
     /**
      * @param RouteLoaderInterface $routeLoader
+     * @param null|object          $newthis
      *
      * @return static
      */
-    public function load(RouteLoaderInterface $routeLoader)
+    public function load(RouteLoaderInterface $routeLoader, object $newthis = null)
     {
         /** @var BlueprintGroup $group */
 
@@ -38,18 +40,20 @@ class BlueprintManager
         while ( null !== key($queue) ) {
             $stack[] = $group = array_shift($queue);
 
-            if (! $routeLoader->supportsSource($source = $group->getSource())) {
+            $source = $group->getSource();
+
+            if (! $routeLoader->supportsSource($source)) {
                 throw new UnexpectedValueException(
                     [ 'Invalid source: %s', $source ]
                 );
             }
 
-            $routeLoader->loadSource($source);
+            $routeLoader->loadSource($source, $newthis ?? $this);
 
-            $routes = $this->flushRoutes();
+            $routes = $this->flushBlueprints();
             $groups = $this->flushGroups();
 
-            $group->addRoutes($routes);
+            $group->addBlueprints($routes);
 
             foreach ( $groups as $childGroup ) {
                 $childGroup->setParent($group);
@@ -64,10 +68,10 @@ class BlueprintManager
             $group = current($stack);
 
             if ($parentGroup = $group->getParent()) {
-                $parentGroup->addRoutes($group->flushRoutes());
+                $parentGroup->addBlueprints($group->flushBlueprints());
 
             } else {
-                foreach ( $group->flushRoutes() as $route ) {
+                foreach ( $group->flushBlueprints() as $route ) {
                     $routes[] = $route;
                 }
             }
@@ -75,7 +79,7 @@ class BlueprintManager
             prev($stack);
         }
 
-        $this->routes = $routes;
+        $this->blueprints = $routes;
 
         return $this;
     }
@@ -88,7 +92,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function get($endpoint, $action, string $name = null) : Blueprint
+    public function get($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('GET', $endpoint, $action, $name);
     }
@@ -100,7 +104,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function post($endpoint, $action, string $name = null) : Blueprint
+    public function post($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('POST', $endpoint, $action, $name);
     }
@@ -112,7 +116,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function put($endpoint, $action, string $name = null) : Blueprint
+    public function put($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('PUT', $endpoint, $action, $name);
     }
@@ -124,7 +128,7 @@ class BlueprintManager
      *
      * @return static
      */
-    public function patch($endpoint, $action, string $name = null) : Blueprint
+    public function patch($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('PATCH', $endpoint, $action, $name);
     }
@@ -136,7 +140,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function delete($endpoint, $action, string $name = null) : Blueprint
+    public function delete($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('DELETE', $endpoint, $action, $name);
     }
@@ -148,7 +152,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function purge($endpoint, $action, string $name = null) : Blueprint
+    public function purge($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('PURGE', $endpoint, $action, $name);
     }
@@ -161,7 +165,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function head($endpoint, $action, string $name = null) : Blueprint
+    public function head($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('HEAD', $endpoint, $action, $name);
     }
@@ -173,7 +177,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function options($endpoint, $action, string $name = null) : Blueprint
+    public function options($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('OPTIONS', $endpoint, $action, $name);
     }
@@ -186,7 +190,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function trace($endpoint, $action, string $name = null) : Blueprint
+    public function trace($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('TRACE', $endpoint, $action, $name);
     }
@@ -198,7 +202,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function connect($endpoint, $action, string $name = null) : Blueprint
+    public function connect($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('CONNECT', $endpoint, $action, $name);
     }
@@ -211,7 +215,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function cli($endpoint, $action, string $name = null) : Blueprint
+    public function cli($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('CLI', $endpoint, $action, $name);
     }
@@ -224,7 +228,7 @@ class BlueprintManager
      *
      * @return Blueprint
      */
-    public function sock($endpoint, $action, string $name = null) : Blueprint
+    public function sock($endpoint, $action, $name = null) : Blueprint
     {
         return $this->route('SOCK', $endpoint, $action, $name);
     }
@@ -258,28 +262,28 @@ class BlueprintManager
     }
 
     /**
-     * @param null|string $endpointRegex
+     * @param null|string $signature
      *
      * @return BlueprintGroup
      */
-    public function endpointRegex(?string $endpointRegex)
+    public function signature(?string $signature)
     {
         $group = $this->group(null);
-        $group->endpointRegex($endpointRegex);
+        $group->signature($signature);
 
         return $group;
     }
 
 
     /**
-     * @param null|string $namespace
+     * @param null|string $name
      *
      * @return BlueprintGroup
      */
-    public function name(?string $namespace)
+    public function name(?string $name)
     {
         $group = $this->group(null);
-        $group->name($namespace);
+        $group->name($name);
 
         return $group;
     }
@@ -353,23 +357,60 @@ class BlueprintManager
 
 
     /**
-     * @param string      $method
-     * @param string      $endpoint
-     * @param mixed       $action
-     * @param null|string $name
+     * @param string     $method
+     * @param mixed      $endpoint
+     * @param mixed      $action
+     * @param null|mixed $name
      *
      * @return Blueprint
      */
-    public function route(string $method, string $endpoint, $action, string $name = null) : Blueprint
+    public function route(string $method, $endpoint, $action, $name = null) : Blueprint
     {
-        $this->routes[] = $route = new Blueprint();
+        $this->blueprints[] = $blueprint = new Blueprint();
 
-        $route->method($method);
-        $route->endpoint($endpoint);
-        $route->action($action);
-        $route->name($name);
+        $endpoint = is_iterable($endpoint)
+            ? $endpoint
+            : [ $endpoint ];
 
-        return $route;
+        $endpointPath = [];
+        $endpointSignature = [];
+        foreach ( $endpoint as $e ) {
+            if (! is_string($e)) {
+                throw new InvalidArgumentException(
+                    [ 'Invalid Endpoint: %s', $endpoint ]
+                );
+            }
+
+            if ([] === $endpointPath) {
+                [ $path, $signature ] = explode(' ', $e, 2) + [ null, null ];
+
+                $path = trim($path) ?: null;
+                $signature = trim($signature) ?: null;
+
+            } else {
+                $path = null;
+                $signature = trim($e) ?: null;
+            }
+
+            if ($path) {
+                $endpointPath[] = $path;
+            }
+
+            if ($signature) {
+                $endpointSignature[] = $signature;
+            }
+        }
+
+        $endpointPath = implode(' ', $endpointPath) ?: null;
+        $endpointSignature = implode(' ', $endpointSignature) ?: null;
+
+        $blueprint->method($method);
+        $blueprint->endpoint($endpointPath);
+        $blueprint->signature($endpointSignature);
+        $blueprint->action($action);
+        $blueprint->name($name);
+
+        return $blueprint;
     }
 
     /**
@@ -388,10 +429,10 @@ class BlueprintManager
     /**
      * @return Blueprint[]
      */
-    public function flushRoutes() : array
+    public function flushBlueprints() : array
     {
-        $routes = $this->routes;
-        $this->routes = [];
+        $routes = $this->blueprints;
+        $this->blueprints = [];
 
         return $routes;
     }

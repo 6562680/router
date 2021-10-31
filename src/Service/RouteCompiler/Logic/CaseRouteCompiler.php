@@ -1,15 +1,15 @@
 <?php
 
 
-namespace Gzhegow\Router\Service\RouteCompiler\Collection;
+namespace Gzhegow\Router\Service\RouteCompiler\Logic;
 
 use Gzhegow\Router\Service\RouteCompiler\RouteCompilerInterface;
 
 
 /**
- * PipeRouteCompiler
+ * CaseRouteCompiler
  */
-class PipeRouteCompiler implements RouteCompilerInterface
+class CaseRouteCompiler implements RouteCompilerInterface
 {
     /**
      * @var RouteCompilerInterface[]
@@ -57,6 +57,8 @@ class PipeRouteCompiler implements RouteCompilerInterface
         foreach ( $this->routeCompilers as $child ) {
             if ($child->supportsRoute($route)) {
                 $child->compileRoute($route);
+
+                break;
             }
         }
     }

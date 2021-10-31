@@ -267,4 +267,48 @@ class Helper
 
         return $_cache[ $filepath ];
     }
+
+
+    /**
+     * @param string    $start
+     * @param string    $end
+     * @param string    $haystack
+     * @param null|int  $offset
+     * @param null|bool $ignoreCase
+     *
+     * @return array
+     */
+    public static function strMatch(string $start, string $end, string $haystack,
+        int $offset = null,
+        bool $ignoreCase = null
+    ) : array
+    {
+        $offset = $offset ?? 0;
+        $ignoreCase = $ignoreCase ?? true;
+
+        $flags = 'u';
+        $flags .= $ignoreCase ? 'i' : '';
+
+        $isMatch = preg_match_all('/'
+            . preg_quote($start, '/')
+            . '(.*?)'
+            . preg_quote($end, '/')
+            . '/' . $flags,
+            $haystack,
+            $result
+        );
+
+        if (false === $isMatch) {
+            $result = [];
+
+        } else {
+            $result = $result[ 1 ] ?? [];
+
+            if ($offset) {
+                array_splice($result, $offset);
+            }
+        }
+
+        return $result;
+    }
 }

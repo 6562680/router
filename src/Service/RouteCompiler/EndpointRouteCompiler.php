@@ -3,14 +3,14 @@
 
 namespace Gzhegow\Router\Service\RouteCompiler;
 
-use Gzhegow\Router\Domain\Blueprint\Blueprint;
+use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\Domain\Configuration\PatternCollection;
 
 
 /**
- * PatternRouteCompiler
+ * EndpointRouteCompiler
  */
-class PatternRouteCompiler implements RouteCompilerInterface
+class EndpointRouteCompiler implements RouteCompilerInterface
 {
     /**
      * @var PatternCollection
@@ -30,13 +30,14 @@ class PatternRouteCompiler implements RouteCompilerInterface
 
 
     /**
-     * @param Blueprint $route
+     * @param Route $route
      *
      * @return void
      */
     public function compileRoute($route) : void
     {
         $endpoint = $route->getEndpoint();
+        $endpointValue = $endpoint->getValue();
 
         $replacements = [];
         foreach ( $this->patternCollection->getPatterns() as $pattern => $regex ) {
@@ -46,29 +47,32 @@ class PatternRouteCompiler implements RouteCompilerInterface
             $replacements[ $search ] = $replacement;
         }
 
-        $endpointRegex = preg_quote($route->getEndpoint(), '/');
+        $endpointRegex = preg_quote($endpointValue, '/');
         $endpointRegex = strtr($endpointRegex, $replacements);
 
-        if ($endpointRegex !== $endpoint) {
+        if ($endpointRegex !== $endpointValue) {
             $endpointRegex = '/^' . $endpointRegex . '$/u';
 
-            $route->endpointRegex($endpointRegex);
+            $endpoint->compile($endpointRegex);
         }
     }
 
 
     /**
-     * @param Blueprint $route
+     * @param Route $route
      *
      * @return bool
      */
     public function supportsRoute($route) : bool
     {
-        if (! ( $route instanceof Blueprint )) {
+        if (! ( $route instanceof Route )) {
             return false;
         }
 
-        if (false === mb_stripos($route->getEndpoint(), '{')) {
+        $endpoint = $route->getEndpoint();
+        $endpointPath = $endpoint->getValue();
+
+        if (false === mb_stripos($endpointPath, '{')) {
             return false;
         }
 

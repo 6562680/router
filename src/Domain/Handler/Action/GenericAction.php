@@ -31,7 +31,7 @@ class GenericAction implements HandlerInterface
      */
     public function __construct($action, ActionProcessorInterface $actionProcessor)
     {
-        if ($actionProcessor->supportsAction($action)) {
+        if (! $actionProcessor->supportsAction($action)) {
             throw new InvalidArgumentException(
                 [ 'Invalid action: %s', $action ]
             );
@@ -49,7 +49,7 @@ class GenericAction implements HandlerInterface
      */
     public function handle(...$arguments)
     {
-        $result = $this->actionProcessor->processAction($this->action, $payload, ...$arguments);
+        $result = $this->actionProcessor->processAction($this->action, ...$arguments);
 
         return $result;
     }

@@ -9,6 +9,21 @@ namespace Gzhegow\Router\Tests\Classes;
  */
 class TestUserController
 {
+    public function dump()
+    {
+        print_r([ __METHOD__, func_get_args() ]);
+
+        return 1;
+    }
+
+    public function load()
+    {
+        print_r([ __METHOD__, func_get_args() ]);
+
+        return 1;
+    }
+
+
     public function get()
     {
         print_r([ __METHOD__, func_get_args() ]);

@@ -19,7 +19,7 @@ class BlueprintGroup extends AbstractBlueprint
     /**
      * @var Blueprint[]
      */
-    protected $routes = [];
+    protected $blueprints = [];
 
     /**
      * @var string
@@ -37,15 +37,6 @@ class BlueprintGroup extends AbstractBlueprint
     public function getParent() : ?BlueprintGroup
     {
         return $this->parent;
-    }
-
-
-    /**
-     * @return Blueprint[]
-     */
-    public function getRoutes() : array
-    {
-        return $this->routes;
     }
 
 
@@ -84,13 +75,13 @@ class BlueprintGroup extends AbstractBlueprint
      *
      * @return static
      */
-    public function setRoutes($routes) : BlueprintGroup
+    public function setBlueprints($routes) : BlueprintGroup
     {
         if (null === $routes) {
-            $this->routes = [];
+            $this->blueprints = [];
 
         } else {
-            $this->addRoutes($routes);
+            $this->addBlueprints($routes);
         }
 
         return $this;
@@ -101,14 +92,14 @@ class BlueprintGroup extends AbstractBlueprint
      *
      * @return static
      */
-    public function addRoutes($routes)
+    public function addBlueprints($routes)
     {
         $routes = is_iterable($routes)
             ? $routes
             : [ $routes ];
 
         foreach ( $routes as $route ) {
-            $this->addRoute($route);
+            $this->addBlueprint($route);
         }
 
         return $this;
@@ -119,9 +110,9 @@ class BlueprintGroup extends AbstractBlueprint
      *
      * @return static
      */
-    public function addRoute(Blueprint $route)
+    public function addBlueprint(Blueprint $route)
     {
-        $this->routes[] = $route;
+        $this->blueprints[] = $route;
 
         return $this;
     }
@@ -153,113 +144,124 @@ class BlueprintGroup extends AbstractBlueprint
 
 
     /**
-     * @param string      $method
-     * @param string      $endpoint
-     * @param mixed       $action
-     * @param null|string $name
+     * @param string     $method
+     * @param mixed      $endpoint
+     * @param mixed      $action
+     * @param null|mixed $name
      *
      * @return Blueprint
      */
-    public function route(string $method, string $endpoint, $action, string $name = null) : Blueprint
+    public function route(string $method, $endpoint, $action, $name = null) : Blueprint
     {
-        $this->routes[] = $route = new Blueprint();
+        $this->blueprints[] = $blueprint = new Blueprint();
 
-        $route->method($method);
-        $route->endpoint($endpoint);
-        $route->action($action);
-        $route->name($name);
+        $blueprint->method($method);
+        $blueprint->endpoint($endpoint);
+        $blueprint->action($action);
+        $blueprint->name($name);
 
-        return $route;
+        return $blueprint;
     }
 
 
     /**
      * @return Blueprint[]
      */
-    public function flushRoutes() : array
+    public function flushBlueprints() : array
     {
-        $routes = $this->routes;
-        $this->routes = [];
+        $blueprints = $this->blueprints;
+        $this->blueprints = [];
 
-        foreach ( $routes as $route ) {
-            $this->applyToRoute($route);
-            $this->applyCorsToRoute($route);
+        foreach ( $blueprints as $blueprint ) {
+            $this->applyTo($blueprint);
         }
 
-        return $routes;
+        return $blueprints;
     }
 
 
     /**
-     * @param Blueprint $route
+     * @param Blueprint $blueprint
      *
      * @return static
      */
-    protected function applyToRoute(Blueprint $route)
+    protected function applyTo(Blueprint $blueprint)
     {
-        $action = $route->getAction();
+        $action = $blueprint->getAction();
 
         if (( null !== $this->namespace )
             && is_string($action)
             && ! is_callable($action)
         ) {
-            $route->action($this->namespace . '\\' . ltrim($action, '\\'));
+            $blueprint->action($this->namespace
+                . '\\' . ltrim($action, '\\')
+            );
         }
 
         if (null !== $this->endpoint) {
-            $route->endpoint($this->endpoint . $route->getEndpoint());
+            $blueprint->endpoint($this->endpoint
+                . '/' . ltrim($blueprint->getEndpoint(), '/')
+            );
         }
 
-        if (null !== $this->endpointRegex) {
-            $route->endpointRegex($this->endpointRegex . $route->getEndpointRegex());
+        if (null !== $this->signature) {
+            $blueprint->signature($this->signature
+                . ' ' . ltrim($blueprint->getSignature(), ' ')
+            );
         }
 
         if (null !== $this->name) {
-            $route->name($this->name . $route->getName());
+            $blueprint->name($this->name
+                . $blueprint->getName()
+            );
         }
 
         if (null !== $this->description) {
-            $route->description($this->description . $route->getDescription());
+            $blueprint->description($this->description
+                . $blueprint->getDescription()
+            );
         }
 
         if ($this->bindings) {
-            $route->bindings([]
-                + $route->getBindings() // 1
+            $blueprint->bindings([]
+                + $blueprint->getBindings() // 1
                 + $this->bindings // 2
             );
         }
 
         if ($this->middlewares) {
-            $route->middlewares(
+            $blueprint->middlewares(
                 array_unique(array_merge([],
                     $this->middlewares, // 1
-                    $route->getMiddlewares(), // 2
+                    $blueprint->getMiddlewares(), // 2
                 ))
             );
         }
 
         if ($this->tags) {
-            $route->tags(
+            $blueprint->tags(
                 array_unique(array_merge([],
                     $this->tags, // 1
-                    $route->getTags(), // 2
+                    $blueprint->getTags(), // 2
                 ))
             );
         }
+
+        $this->applyCorsTo($blueprint);
 
         return $this;
     }
 
     /**
-     * @param Blueprint $routeBlueprint
+     * @param Blueprint $blueprint
      *
      * @return static
      */
-    protected function applyCorsToRoute(Blueprint $routeBlueprint)
+    protected function applyCorsTo(Blueprint $blueprint)
     {
         if (null !== $this->cors) {
             $cors = null
-                ?? $routeBlueprint->getCors()
+                ?? $blueprint->getCors()
                 ?? new CorsBuilder();
 
             if (null !== ( $groupValue = $this->cors->getAllowOrigins() )) {
@@ -299,7 +301,7 @@ class BlueprintGroup extends AbstractBlueprint
                 ?? $this->cors->getMaxAge()
             );
 
-            $routeBlueprint->cors($cors);
+            $blueprint->cors($cors);
         }
 
         return $this;

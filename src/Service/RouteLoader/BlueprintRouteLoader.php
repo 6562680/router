@@ -16,60 +16,45 @@ class BlueprintRouteLoader implements RouteLoaderInterface
     /**
      * @var RouterContainerInterface
      */
-    protected $routerContainer;
+    protected $routeContainer;
 
 
     /**
      * Constructor
      *
-     * @param RouterContainerInterface $routerContainer
+     * @param RouterContainerInterface $routeContainer
      */
-    public function __construct(RouterContainerInterface $routerContainer)
+    public function __construct(RouterContainerInterface $routeContainer)
     {
-        $this->routerContainer = $routerContainer;
+        $this->routeContainer = $routeContainer;
     }
 
 
     /**
-     * @param mixed                $source
-     * @param null|RouteCollection $collection
+     * @param BlueprintManager $source
+     * @param null|object      $newthis
      *
      * @return RouteCollection
      */
-    public function loadSource($source, RouteCollection $collection = null) : RouteCollection
+    public function loadSource($source, object $newthis = null) : RouteCollection
     {
-        $blueprintManager = $this->assertBlueprintManager($source);
+        $routeLoader = $this->routeContainer->getRouteLoader();
 
-        $collection = $collection ?? new RouteCollection();
+        $collection = new RouteCollection();
 
-        $blueprintManager->load($this->routerContainer->getRouteLoader());
+        $source->load($routeLoader, $newthis);
 
-        if ($routes = $blueprintManager->flushRoutes()) {
-            $routeCompiler = $this->routerContainer->getRouteCompiler();
+        if ($blueprints = $source->flushBlueprints()) {
+            foreach ( $blueprints as $blueprint ) {
+                $route = $blueprint->build();
 
-            foreach ( $routes as $route ) {
-                if ($routeCompiler->supportsRoute($route)) {
-                    $routeCompiler->compileRoute($route);
-                }
-
-                $compiledRoute = $route->build();
-
-                $collection->addRoute($compiledRoute);
+                ( $corsBlueprint = $blueprint->getCors() )
+                    ? $collection->addRouteWithCors($corsBlueprint->build(), $route)
+                    : $collection->addRoute($route);
             }
         }
 
         return $collection;
-    }
-
-
-    /**
-     * @param BlueprintManager $blueprintManager
-     *
-     * @return BlueprintManager
-     */
-    protected function assertBlueprintManager($blueprintManager) : BlueprintManager
-    {
-        return $blueprintManager;
     }
 
 

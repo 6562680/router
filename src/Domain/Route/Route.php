@@ -3,8 +3,10 @@
 
 namespace Gzhegow\Router\Domain\Route;
 
-use Gzhegow\Router\Domain\Cors\Cors;
+use Gzhegow\Router\Domain\Endpoint\Endpoint;
+use Gzhegow\Router\Domain\Endpoint\Signature;
 use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
+use Gzhegow\Router\Exceptions\Runtime\UnexpectedValueException;
 
 
 /**
@@ -22,13 +24,13 @@ class Route
     protected $action;
 
     /**
-     * @var string
+     * @var Endpoint
      */
     protected $endpoint;
     /**
-     * @var string
+     * @var Signature
      */
-    protected $endpointRegex;
+    protected $signature;
 
     /**
      * @var string
@@ -42,44 +44,42 @@ class Route
     /**
      * @var array
      */
-    protected $bindings = [];
+    protected $bindings;
     /**
      * @var array
      */
-    protected $middlewares = [];
+    protected $middlewares;
     /**
      * @var array
      */
-    protected $tags = [];
-
-    /**
-     * @var Cors
-     */
-    protected $cors;
+    protected $tags;
 
 
     /**
      * Constructor
      *
-     * @param string      $method
-     * @param string      $endpoint
-     * @param             $action
-     *
-     * @param null|string $name
-     * @param null|string $description
+     * @param string $method
+     * @param string $command
+     * @param mixed  $action
      */
-    public function __construct(string $method, string $endpoint, $action,
-        string $name = null,
-        string $description = null
-    )
+    public function __construct(string $method, string $command, $action)
     {
+        if (! strlen($method)) {
+            throw new InvalidArgumentException(
+                [ 'Invalid method: %s', $method ]
+            );
+        }
+
+        [ $endpoint, $signature ] = explode(' ', $command, 2) + [ null, null ];
+
         $this->method = $method;
         $this->action = $action;
 
-        $this->endpoint = $endpoint;
+        $this->endpoint = new Endpoint($endpoint);
 
-        $this->name = $name;
-        $this->description = $description;
+        if (null !== $signature) {
+            $this->signature = new Signature($signature);
+        }
     }
 
 
@@ -89,11 +89,9 @@ class Route
     public function __serialize() : array
     {
         return array_filter([
-            'method' => $this->method,
-            'action' => $this->action,
-
-            'endpoint'      => $this->endpoint,
-            'endpointRegex' => $this->endpointRegex,
+            'method'   => $this->method,
+            'endpoint' => $this->endpoint,
+            'action'   => $this->action,
 
             'name'        => $this->name,
             'description' => $this->description,
@@ -101,8 +99,6 @@ class Route
             'bindings'    => $this->bindings,
             'middlewares' => $this->middlewares,
             'tags'        => $this->tags,
-
-            'cors' => $this->cors,
         ], function ($v) {
             return ! is_null($v);
         });
@@ -116,10 +112,8 @@ class Route
     public function __unserialize(array $data) : void
     {
         $this->method = $data[ 'method' ] ?? null;
-        $this->action = $data[ 'action' ] ?? null;
-
         $this->endpoint = $data[ 'endpoint' ] ?? null;
-        $this->endpointRegex = $data[ 'endpointRegex' ] ?? null;
+        $this->action = $data[ 'action' ] ?? null;
 
         $this->name = $data[ 'name' ] ?? null;
         $this->description = $data[ 'description' ] ?? null;
@@ -127,15 +121,13 @@ class Route
         $this->bindings = $data[ 'bindings' ] ?? [];
         $this->middlewares = $data[ 'middlewares' ] ?? [];
         $this->tags = $data[ 'tags' ] ?? [];
-
-        $this->cors = $data[ 'cors' ] ?? null;
     }
 
 
     /**
      * @return null|string
      */
-    public function getMethod() : ?string
+    public function getMethod() : string
     {
         return $this->method;
     }
@@ -145,39 +137,45 @@ class Route
      */
     public function getAction()
     {
+        if (null === $this->action) {
+            throw new UnexpectedValueException(
+                [ 'Missing action: %s', $this ]
+            );
+        }
+
         return $this->action;
     }
 
 
     /**
-     * @return null|string
+     * @return Endpoint
      */
-    public function getEndpoint() : ?string
+    public function getEndpoint() : Endpoint
     {
         return $this->endpoint;
     }
 
     /**
-     * @return null|string
+     * @return Signature
      */
-    public function getEndpointRegex() : ?string
+    public function getSignature() : Signature
     {
-        return $this->endpointRegex;
+        return $this->signature;
     }
 
 
     /**
-     * @return null|string
+     * @return string
      */
-    public function getName() : ?string
+    public function getName() : string
     {
         return $this->name;
     }
 
     /**
-     * @return null|string
+     * @return string
      */
-    public function getDescription() : ?string
+    public function getDescription() : string
     {
         return $this->description;
     }
@@ -188,7 +186,7 @@ class Route
      */
     public function getBindings() : array
     {
-        return $this->bindings;
+        return $this->bindings ?? [];
     }
 
     /**
@@ -205,7 +203,7 @@ class Route
      */
     public function getMiddlewares() : array
     {
-        return $this->middlewares;
+        return $this->middlewares ?? [];
     }
 
     /**
@@ -213,35 +211,56 @@ class Route
      */
     public function getTags() : array
     {
-        return array_keys($this->tags);
+        return array_keys($this->tags ?? []);
     }
 
 
     /**
-     * @return Cors
+     * @return Signature
      */
-    public function getCors() : Cors
+    public function hasSignature() : ?Signature
     {
-        return $this->cors;
+        return $this->signature;
     }
 
 
     /**
-     * @param null|string $endpointRegex
+     * @return null|string
+     */
+    public function hasName() : ?string
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function hasDescription() : ?string
+    {
+        return $this->description;
+    }
+
+
+    /**
+     * @param null|string $name
      *
      * @return static
      */
-    public function setEndpointRegex(?string $endpointRegex)
+    public function setName(?string $name)
     {
-        if (null !== $endpointRegex) {
-            if (false === @preg_match($endpointRegex, '')) {
-                throw new InvalidArgumentException(
-                    [ 'Bad regular expression: %s', $endpointRegex ]
-                );
-            }
-        }
+        $this->name = $name;
 
-        $this->endpointRegex = $endpointRegex;
+        return $this;
+    }
+
+    /**
+     * @param null|string $description
+     *
+     * @return static
+     */
+    public function setDescription(?string $description)
+    {
+        $this->description = $description;
 
         return $this;
     }
@@ -255,7 +274,7 @@ class Route
     public function setBindings(?array $bindings)
     {
         if (null === $bindings) {
-            $this->bindings = [];
+            $this->bindings = null;
 
         } else {
             $this->addBindings($bindings);
@@ -299,9 +318,10 @@ class Route
      */
     public function setMiddlewares($middlewares)
     {
-        $this->middlewares = [];
+        if (null === $middlewares) {
+            $this->middlewares = null;
 
-        if (null !== $middlewares) {
+        } else {
             $this->addMiddlewares($middlewares);
         }
 
@@ -348,9 +368,10 @@ class Route
      */
     public function setTags($tags)
     {
-        $this->tags = [];
+        if (null === $tags) {
+            $this->tags = null;
 
-        if (null !== $tags) {
+        } else {
             $this->addTags($tags);
         }
 
@@ -383,19 +404,6 @@ class Route
     public function addTag(string $tag)
     {
         $this->tags[ $tag ] = true;
-
-        return $this;
-    }
-
-
-    /**
-     * @param Cors $cors
-     *
-     * @return static
-     */
-    public function setCors(Cors $cors)
-    {
-        $this->cors = $cors;
 
         return $this;
     }

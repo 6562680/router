@@ -4,18 +4,28 @@
 namespace Gzhegow\Router;
 
 use Gzhegow\Router\Vendor\Helper;
-use Psr\Container\ContainerInterface;
-use Gzhegow\Router\Domain\Cors\CorsMiddleware;
 use Gzhegow\Router\Exceptions\RuntimeException;
 use Gzhegow\Router\Domain\Route\RouteCollection;
 use Gzhegow\Router\Domain\Configuration\Configuration;
 use Gzhegow\Router\Domain\Configuration\PatternCollection;
+use Gzhegow\Router\Service\RouteLoader\CallableRouteLoader;
+use Gzhegow\Router\Service\RouteCompiler\CorsRouteCompiler;
 use Gzhegow\Router\Service\RouteLoader\RouteLoaderInterface;
+use Gzhegow\Router\Service\RouteLoader\BlueprintRouteLoader;
 use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 use Gzhegow\Router\Domain\Configuration\MiddlewareCollection;
+use Gzhegow\Router\Service\RouteLoader\Logic\CaseRouteLoader;
 use Gzhegow\Router\Exceptions\Runtime\UnexpectedValueException;
+use Gzhegow\Router\Service\RouteCompiler\EndpointRouteCompiler;
 use Gzhegow\Router\Service\RouteCompiler\RouteCompilerInterface;
+use Gzhegow\Router\Service\RouteCompiler\SignatureRouteCompiler;
+use Gzhegow\Router\Service\RouteCompiler\Logic\PipeRouteCompiler;
+use Gzhegow\Router\Service\ActionProcessor\HandlerActionProcessor;
+use Gzhegow\Router\Service\ActionProcessor\AsteriskActionProcessor;
 use Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface;
+use Gzhegow\Router\Service\ActionProcessor\Logic\CaseActionProcessor;
+use Gzhegow\Router\Service\ActionProcessor\InvokableClassActionProcessor;
+use Gzhegow\Router\Service\ActionProcessor\Callback\CallableStaticActionProcessor;
 
 
 /**
@@ -46,20 +56,16 @@ class RouterContainer implements RouterContainerInterface
         $this->configuration = $configuration;
 
         $this->set(RouterContainerInterface::class, $this);
-        $this->set(ContainerInterface::class, $this);
+
+        $this->getRouterCache();
 
         $this->getRouteCollection();
         $this->getMiddlewareCollection();
         $this->getPatternCollection();
 
-        $this->getRouterFactory();
-
         $this->getRouteLoader();
         $this->getRouteCompiler();
-
         $this->getActionProcessor();
-
-        $this->getCorsMiddleware();
     }
 
 
@@ -90,31 +96,62 @@ class RouterContainer implements RouterContainerInterface
 
 
     /**
-     * @return RouterFactoryInterface
+     * @return RouteLoaderInterface
      */
-    public function getRouterFactory() : RouterFactoryInterface
+    public function newRouteLoader() : RouteLoaderInterface
     {
-        if (! $this->has($id = RouterFactoryInterface::class)) {
-            $item = null
-                ?? $this->configuration->getRouterFactory()
-                ?? new RouterFactory($this);
+        $routeLoader = new CaseRouteLoader();
 
-            $this->items[ $id ] = $item;
-        }
+        $routeLoader->addRouteLoader(new BlueprintRouteLoader($this));
+        $routeLoader->addRouteLoader(new CallableRouteLoader());
 
-        return $this->get($id);
+        return $routeLoader;
     }
 
     /**
-     * @return null|RouterCacheInterface
+     * @return RouteCompilerInterface
      */
-    public function getRouterCache() : ?RouterCacheInterface
+    public function newRouteCompiler() : RouteCompilerInterface
+    {
+        $routeCompiler = new PipeRouteCompiler();
+
+        $routeCompiler->addRouteCompiler(new EndpointRouteCompiler($this->getPatternCollection()));
+        $routeCompiler->addRouteCompiler(new SignatureRouteCompiler());
+        $routeCompiler->addRouteCompiler(new CorsRouteCompiler());
+
+        return $routeCompiler;
+    }
+
+
+    /**
+     * @return ActionProcessorInterface
+     */
+    public function newActionProcessor() : ActionProcessorInterface
+    {
+        return new CaseActionProcessor([
+            new HandlerActionProcessor($this), // HandlerInterface
+            new InvokableClassActionProcessor($this), // $obj->__invoke()
+            new AsteriskActionProcessor($this), // 'class@method'
+            new CallableStaticActionProcessor($this), // 'class::method'
+            // new CallableDynamicActionProcessor($this), // \Closure
+        ]);
+    }
+
+
+    /**
+     * @return RouterCacheInterface
+     */
+    public function getRouterCache() : RouterCacheInterface
     {
         if (! $this->has($id = RouterCacheInterface::class)) {
+            $item = $this->configuration->getCache();
             $item = null
-                ?? new RouterCache($this->configuration->getCache());
+                ?? ( $item instanceof $id ? $item : null )
+                ?? ( is_a($item, $id, true) ? $this->new($item) : null )
+                ?? ( is_callable($item) ? $this->call(null, $item) : null )
+                ?? null;
 
-            $this->items[ $id ] = $item;
+            $this->items[ $id ] = new RouterCache($item);
         }
 
         return $this->get($id);
@@ -127,9 +164,12 @@ class RouterContainer implements RouterContainerInterface
     public function getRouteLoader() : RouteLoaderInterface
     {
         if (! $this->has($id = RouteLoaderInterface::class)) {
+            $item = $this->configuration->getRouteLoader();
             $item = null
-                ?? $this->configuration->getRouteLoader()
-                ?? $this->getRouterFactory()->newRouteLoader();
+                ?? ( $item instanceof $id ? $item : null )
+                ?? ( is_a($item, $id, true) ? $this->new($item) : null )
+                ?? ( is_callable($item) ? $this->call(null, $item) : null )
+                ?? $this->newRouteLoader();
 
             $this->items[ $id ] = $item;
         }
@@ -143,9 +183,12 @@ class RouterContainer implements RouterContainerInterface
     public function getRouteCompiler() : RouteCompilerInterface
     {
         if (! $this->has($id = RouteCompilerInterface::class)) {
+            $item = $this->configuration->getRouteCompiler();
             $item = null
-                ?? $this->configuration->getRouteCompiler()
-                ?? $this->getRouterFactory()->newRouteCompiler();
+                ?? ( $item instanceof $id ? $item : null )
+                ?? ( is_a($item, $id, true) ? $this->new($item) : null )
+                ?? ( is_callable($item) ? $this->call(null, $item) : null )
+                ?? $this->newRouteCompiler();
 
             $this->items[ $id ] = $item;
         }
@@ -160,26 +203,12 @@ class RouterContainer implements RouterContainerInterface
     public function getActionProcessor() : ActionProcessorInterface
     {
         if (! $this->has($id = ActionProcessorInterface::class)) {
+            $item = $this->configuration->getActionProcessor();
             $item = null
-                ?? $this->configuration->getActionProcessor()
-                ?? $this->getRouterFactory()->newActionProcessor();
-
-            $this->items[ $id ] = $item;
-        }
-
-        return $this->get($id);
-    }
-
-
-    /**
-     * @return mixed
-     */
-    public function getCorsMiddleware()
-    {
-        if (! $this->has($id = CorsMiddleware::class)) {
-            $item = null
-                ?? $this->configuration->getCorsMiddleware()
-                ?? CorsMiddleware::class;
+                ?? ( $item instanceof $id ? $item : null )
+                ?? ( is_a($item, $id, true) ? $this->new($item) : null )
+                ?? ( is_callable($item) ? $this->call(null, $item) : null )
+                ?? $this->newActionProcessor();
 
             $this->items[ $id ] = $item;
         }
@@ -194,7 +223,11 @@ class RouterContainer implements RouterContainerInterface
     public function getRouteCollection() : RouteCollection
     {
         if (! $this->has($id = RouteCollection::class)) {
+            $item = $this->configuration->getRouteCollection();
             $item = null
+                ?? ( $item instanceof $id ? $item : null )
+                ?? ( is_a($item, $id, true) ? $this->new($item) : null )
+                ?? ( is_callable($item) ? $this->call(null, $item) : null )
                 ?? new RouteCollection();
 
             $this->items[ $id ] = $item;
@@ -210,7 +243,11 @@ class RouterContainer implements RouterContainerInterface
     public function getMiddlewareCollection() : MiddlewareCollection
     {
         if (! $this->has($id = MiddlewareCollection::class)) {
+            $item = $this->configuration->getMiddlewareCollection();
             $item = null
+                ?? ( $item instanceof $id ? $item : null )
+                ?? ( is_a($item, $id, true) ? $this->new($item) : null )
+                ?? ( is_callable($item) ? $this->call(null, $item) : null )
                 ?? new MiddlewareCollection($this->getActionProcessor());
 
             $this->items[ $id ] = $item;
@@ -225,8 +262,14 @@ class RouterContainer implements RouterContainerInterface
     public function getPatternCollection() : PatternCollection
     {
         if (! $this->has($id = PatternCollection::class)) {
-            $this->items[ $id ] = null
+            $item = $this->configuration->getPatternCollection();
+            $item = null
+                ?? ( $item instanceof $id ? $item : null )
+                ?? ( is_a($item, $id, true) ? $this->new($item) : null )
+                ?? ( is_callable($item) ? $this->call(null, $item) : null )
                 ?? new PatternCollection();
+
+            $this->items[ $id ] = $item;
         }
 
         return $this->get(PatternCollection::class);
@@ -250,13 +293,12 @@ class RouterContainer implements RouterContainerInterface
 
         } else {
             throw new UnexpectedValueException(
-                [ 'Missing Container id: %s', $id ]
+                [ 'Missing id: %s', $id ]
             );
         }
 
         return $item;
     }
-
 
     /**
      * @param string $id

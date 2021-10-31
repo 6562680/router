@@ -3,25 +3,30 @@
 
 namespace Gzhegow\Router\Service\RouteLoader;
 
+use Gzhegow\Router\Vendor\Helper;
 use Gzhegow\Router\Domain\Route\RouteCollection;
 
 
 /**
- * CallableRouteLoader
+ * FileRequireRouteLoader
  */
-class CallableRouteLoader implements RouteLoaderInterface
+class FileRequireRouteLoader implements RouteLoaderInterface
 {
     /**
-     * @param callable    $source
+     * @param mixed       $source
      * @param null|object $newthis
      *
      * @return RouteCollection
      */
     public function loadSource($source, object $newthis = null) : RouteCollection
     {
-        $collection = new RouteCollection();
+        $collection = ( function () use ($source) {
+            $collection = new RouteCollection();
 
-        $source($collection, $newthis ?? $this);
+            require Helper::theRealpath($source);
+
+            return $collection;
+        } )->call($newthis ?? $this);
 
         return $collection;
     }
@@ -34,6 +39,6 @@ class CallableRouteLoader implements RouteLoaderInterface
      */
     public function supportsSource($source) : bool
     {
-        return is_callable($source);
+        return (bool) Helper::filterFilePhp($source);
     }
 }

@@ -3,13 +3,16 @@
 
 namespace Gzhegow\Router;
 
+use Gzhegow\Router\Domain\Cors\Cors;
 use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\Domain\Route\RouteCollection;
 use Gzhegow\Router\Domain\Configuration\Configuration;
+use Gzhegow\Router\Domain\Handler\Action\GenericAction;
 use Gzhegow\Router\Domain\Configuration\PatternCollection;
 use Gzhegow\Router\Domain\Configuration\MiddlewareCollection;
 use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
-use Gzhegow\Router\Domain\Route\Specification\RouteSpectificationInterface;
+use Gzhegow\Router\Domain\Handler\Middleware\GenericMiddleware;
+use Gzhegow\Router\Domain\Route\Specification\RouteSpecificationInterface;
 
 
 /**
@@ -26,10 +29,15 @@ class Router implements RouterInterface
      * @var RouteCollection
      */
     protected $routeCollection;
+
     /**
      * @var Route
      */
     protected $routeCurrent;
+    /**
+     * @var Cors
+     */
+    protected $corsCurrent;
 
 
     /**
@@ -41,9 +49,8 @@ class Router implements RouterInterface
     {
         $routerContainer = new RouterContainer($configuration);
 
-        $routerContainer->set(RouterInterface::class, $this);
-
         $this->routerContainer = $routerContainer;
+
         $this->routeCollection = $routerContainer->getRouteCollection();
     }
 
@@ -63,11 +70,19 @@ class Router implements RouterInterface
             );
         }
 
-        $routeCollection = $loader->loadSource($source);
+        $routeCollection = $loader->loadSource($source, $loader);
 
-        $this->routeCollection = $routeCollection;
+        if ($routes = $routeCollection->getRoutes()) {
+            $compiler = $this->routerContainer->getRouteCompiler();
 
-        $this->routerContainer->set(RouteCollection::class, $routeCollection);
+            foreach ( $routes as $route ) {
+                if ($compiler->supportsRoute($route)) {
+                    $compiler->compileRoute($route);
+                }
+            }
+        }
+
+        $this->routeCollection->merge($routeCollection);
 
         return $this;
     }
@@ -81,12 +96,34 @@ class Router implements RouterInterface
      */
     public function handle(Route $route, ...$arguments)
     {
-        $factory = $this->routerContainer->getRouterFactory();
+        $this->setRouteCurrent($route);
 
-        $this->routeCurrent = $route;
-        $this->routerContainer->set(Route::class, $route);
+        if ($cors = $this->routeCollection->hasCorsFor($route)) {
+            $this->setCorsCurrent($cors);
+        }
 
-        $handler = $factory->newAction($route->getAction());
+        $result = $this->handleRoute($route, ...$arguments);
+
+        $this->corsCurrent = null;
+        $this->routerContainer->unset(Cors::class);
+
+        $this->routeCurrent = null;
+        $this->routerContainer->unset(Route::class);
+
+        return $result;
+    }
+
+    /**
+     * @param Route $route
+     * @param mixed ...$arguments
+     *
+     * @return null|int|mixed
+     */
+    protected function handleRoute(Route $route, ...$arguments)
+    {
+        $action = new GenericAction($route->getAction(),
+            $this->routerContainer->getActionProcessor()
+        );
 
         $middlewares = [];
         if ($routeMiddlewares = $route->getMiddlewares()) {
@@ -102,16 +139,19 @@ class Router implements RouterInterface
 
             end($middlewares);
             while ( $middleware = current($middlewares) ) {
-                $handler = $factory->newMiddleware($middleware, $handler);
+                $middleware = new GenericMiddleware($middleware,
+                    $this->routerContainer->getActionProcessor()
+                );
+
+                $middleware->setNext($action);
+
+                $action = $middleware;
 
                 prev($middlewares);
             }
         }
 
-        $result = $handler->handle(...$arguments);
-
-        $this->routerContainer->unset(Route::class);
-        $this->routeCurrent = null;
+        $result = $action->handle(...$arguments);
 
         return $result;
     }
@@ -139,8 +179,9 @@ class Router implements RouterInterface
      */
     public function getRouteCollection() : RouteCollection
     {
-        return $this->routerContainer->getRouteCollection();
+        return $this->routeCollection;
     }
+
 
     /**
      * @return null|Route
@@ -148,6 +189,14 @@ class Router implements RouterInterface
     public function getRouteCurrent() : ?Route
     {
         return $this->routeCurrent;
+    }
+
+    /**
+     * @return null|Cors
+     */
+    public function getCorsCurrent() : ?Cors
+    {
+        return $this->corsCurrent;
     }
 
 
@@ -169,6 +218,75 @@ class Router implements RouterInterface
 
 
     /**
+     * @param RouteCollection $routeCollection
+     *
+     * @return static
+     */
+    protected function setRouteCollection(RouteCollection $routeCollection)
+    {
+        $this->routeCollection = $routeCollection;
+        $this->routerContainer->set(RouteCollection::class, $routeCollection);
+
+        return $this;
+    }
+
+
+    /**
+     * @param Route $route
+     *
+     * @return static
+     */
+    protected function setRouteCurrent(Route $route)
+    {
+        $this->routeCurrent = $route;
+        $this->routerContainer->set(Route::class, $route);
+
+        return $this;
+    }
+
+    /**
+     * @param Cors $cors
+     *
+     * @return static
+     */
+    protected function setCorsCurrent(Cors $cors)
+    {
+        $this->corsCurrent = $cors;
+        $this->routerContainer->set(Cors::class, $cors);
+
+        return $this;
+    }
+
+
+    /**
+     * @param null|RouteSpecificationInterface $routeSpecification
+     * @param null|int                         $limit
+     * @param null|int                         $offset
+     *
+     * @return Route[]
+     */
+    public function matchAll(?RouteSpecificationInterface $routeSpecification, int $limit = null, int $offset = null) : array
+    {
+        $routes = $this->routeCollection->all($routeSpecification, $limit, $offset);
+
+        return $routes;
+    }
+
+    /**
+     * @param null|RouteSpecificationInterface $routeSpecification
+     * @param null|int                         $offset
+     *
+     * @return null|Route
+     */
+    public function match(?RouteSpecificationInterface $routeSpecification, int $offset = null) : ?Route
+    {
+        $route = $this->routeCollection->first($routeSpecification, $offset);
+
+        return $route;
+    }
+
+
+    /**
      * @param \Closure    $closure
      * @param null|int    $ttl
      * @param null|string $key
@@ -181,38 +299,8 @@ class Router implements RouterInterface
 
         $routeCollection = $cache->remember($closure, $ttl, $key);
 
-        $this->routeCollection = $routeCollection;
-
-        $this->routerContainer->set(RouteCollection::class, $routeCollection);
+        $this->setRouteCollection($routeCollection);
 
         return $this;
-    }
-
-
-    /**
-     * @param null|RouteSpectificationInterface $routeSpecification
-     * @param null|int                          $limit
-     * @param null|int                          $offset
-     *
-     * @return Route[]
-     */
-    public function matchAll(RouteSpectificationInterface $routeSpecification = null, int $limit = null, int $offset = null) : array
-    {
-        $route = $this->getRouteCollection()->all($routeSpecification);
-
-        return $route;
-    }
-
-    /**
-     * @param null|RouteSpectificationInterface $routeSpecification
-     * @param null|int                          $offset
-     *
-     * @return null|Route
-     */
-    public function match(RouteSpectificationInterface $routeSpecification = null, int $offset = null) : ?Route
-    {
-        $route = $this->getRouteCollection()->first($routeSpecification);
-
-        return $route;
     }
 }

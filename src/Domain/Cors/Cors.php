@@ -36,33 +36,24 @@ class Cors
     /**
      * Constructor
      *
-     * @param null|array $allowOrigins
-     *
-     * @param null|array $allowHeaders
-     * @param null|array $exposeHeaders
-     *
-     * @param null|bool  $allowCredentials
-     *
-     * @param null|int   $maxAge
+     * @param array $cors
      */
-    public function __construct(
-        array $allowOrigins = null,
-
-        array $allowHeaders = null,
-        array $exposeHeaders = null,
-
-        bool $allowCredentials = null,
-
-        int $maxAge = null
-    )
+    public function __construct(array $cors)
     {
-        $this->allowOrigins = $allowOrigins;
+        $allowOrigins = $cors[ 'allowOrigins' ] ?? [];
+        $allowHeaders = $cors[ 'allowHeaders' ] ?? [];
+        $exposeHeaders = $cors[ 'exposeHeaders' ] ?? [];
+        $allowCredentials = $cors[ 'allowCredentials' ] ?? null;
+        $maxAge = $cors[ 'maxAge' ] ?? null;
 
+        // asort($allowOrigins);
+        // asort($allowHeaders);
+        // asort($exposeHeaders);
+
+        $this->allowOrigins = $allowOrigins;
         $this->allowHeaders = $allowHeaders;
         $this->exposeHeaders = $exposeHeaders;
-
         $this->allowCredentials = $allowCredentials;
-
         $this->maxAge = $maxAge;
     }
 
@@ -72,13 +63,9 @@ class Cors
      */
     public function __serialize() : array
     {
-        return array_filter([
-            'allowOrigins'     => $this->allowOrigins,
-            'allowHeaders'     => $this->allowHeaders,
-            'exposeHeaders'    => $this->exposeHeaders,
-            'allowCredentials' => $this->allowCredentials,
-            'maxAge'           => $this->maxAge,
-        ], function ($v) { return ! is_null($v); });
+        return array_filter($this->toArray(),
+            function ($v) { return ! is_null($v); }
+        );
     }
 
     /**
@@ -93,6 +80,21 @@ class Cors
         $this->exposeHeaders = $data[ 'exposeHeaders' ] ?? [];
         $this->allowCredentials = $data[ 'allowCredentials' ] ?? null;
         $this->maxAge = $data[ 'maxAge' ] ?? null;
+    }
+
+
+    /**
+     * @return array
+     */
+    public function toArray() : array
+    {
+        return [
+            'allowOrigins'     => $this->allowOrigins,
+            'allowHeaders'     => $this->allowHeaders,
+            'exposeHeaders'    => $this->exposeHeaders,
+            'allowCredentials' => $this->allowCredentials,
+            'maxAge'           => $this->maxAge,
+        ];
     }
 
 

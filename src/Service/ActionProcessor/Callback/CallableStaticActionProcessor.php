@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Gzhegow\Router\Service\ActionProcessor\CallableActionProcessor;
+namespace Gzhegow\Router\Service\ActionProcessor\Callback;
 
 use Gzhegow\Router\Vendor\Helper;
 use Gzhegow\Router\Service\ActionProcessor\CallableActionProcessor;

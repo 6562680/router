@@ -5,6 +5,7 @@ namespace Gzhegow\Router\Domain\Blueprint;
 
 use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\Exceptions\Runtime\OutOfBoundsException;
+use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 
 
 /**
@@ -27,13 +28,21 @@ class Blueprint extends AbstractBlueprint
      */
     public function build() : Route
     {
-        $compiledRoute = new Route(
-            $this->getMethod(), $this->getEndpoint(), $this->getAction(),
-            $this->getName(), $this->getDescription()
+        $command = [];
+        $command[] = $this->getEndpoint();
+        $command[] = $this->getSignature();
+        $command = implode(' ', array_filter($command, 'strlen'));
+
+        $compiledRoute = new Route($this->getMethod(),
+            $command, $this->getAction()
         );
 
-        if (null !== ( $value = $this->getEndpointRegex() )) {
-            $compiledRoute->setEndpointRegex($value);
+        if ($value = $this->getName()) {
+            $compiledRoute->setName($value);
+        }
+
+        if ($value = $this->getDescription()) {
+            $compiledRoute->setDescription($value);
         }
 
         if ($value = $this->getBindings()) {
@@ -48,20 +57,14 @@ class Blueprint extends AbstractBlueprint
             $compiledRoute->setTags($value);
         }
 
-        if ($value = $this->getCors()) {
-            $cors = $value->build();
-
-            $compiledRoute->setCors($cors);
-        }
-
         return $compiledRoute;
     }
 
 
     /**
-     * @return null|string
+     * @return string
      */
-    public function getMethod() : ?string
+    public function getMethod() : string
     {
         return $this->method;
     }
@@ -76,11 +79,11 @@ class Blueprint extends AbstractBlueprint
 
 
     /**
-     * @param null|string $method
+     * @param string $method
      *
      * @return static
      */
-    public function method(?string $method)
+    public function method(string $method)
     {
         $enum = [
             'CLI' => true,
@@ -115,12 +118,18 @@ class Blueprint extends AbstractBlueprint
     }
 
     /**
-     * @param null|mixed $action
+     * @param mixed $action
      *
      * @return static
      */
     public function action($action)
     {
+        if (null === $action) {
+            throw new InvalidArgumentException(
+                [ 'Invalid action: %s', $action ]
+            );
+        }
+
         $this->action = $action;
 
         return $this;
