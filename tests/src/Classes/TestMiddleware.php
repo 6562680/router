@@ -11,5 +11,6 @@ class TestMiddleware
 {
     public function __invoke()
     {
+        dump(__METHOD__);
     }
 }

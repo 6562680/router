@@ -4,93 +4,96 @@
 namespace Gzhegow\Router\Tests\Classes;
 
 
+use Gzhegow\Router\Domain\Cors\Cors;
+use Gzhegow\Router\Domain\Route\Route;
+
+
 /**
  * TestUserController
  */
 class TestUserController
 {
-    public function dump()
+    public function get(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r([ __METHOD__, func_get_args() ]);
+        print_r(__METHOD__);
+        print_r([ $route, $cors ]);
+        print_r($arguments);
 
         return 1;
     }
 
-    public function load()
+    public function post(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r([ __METHOD__, func_get_args() ]);
+        print_r(__METHOD__);
+        print_r([ $route, $cors ]);
+        print_r($arguments);
 
         return 1;
     }
 
-
-    public function get()
+    public function put(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r([ __METHOD__, func_get_args() ]);
+        print_r(__METHOD__);
+        print_r([ $route, $cors ]);
+        print_r($arguments);
 
         return 1;
     }
 
-    public function post()
+    public function delete(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r([ __METHOD__, func_get_args() ]);
-
-        return 1;
-    }
-
-    public function put()
-    {
-        print_r([ __METHOD__, func_get_args() ]);
-
-        return 1;
-    }
-
-    public function delete()
-    {
-        print_r([ __METHOD__, func_get_args() ]);
+        print_r(__METHOD__);
+        print_r([ $route, $cors ]);
+        print_r($arguments);
 
         return 1;
     }
 
 
-    public function index()
+    public function index(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r([ __METHOD__, func_get_args() ]);
+        print_r(__METHOD__);
+        print_r([ $route, $cors ]);
+        print_r($arguments);
 
         return 1;
     }
 
 
-    public function login()
+    public function login(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r([ __METHOD__, func_get_args() ]);
+        print_r(__METHOD__);
+        print_r([ $route, $cors ]);
+        print_r($arguments);
 
         return 1;
     }
 
-    public function loginPost()
+    public function loginPost(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r([ __METHOD__, func_get_args() ]);
+        print_r(__METHOD__);
+        print_r([ $route, $cors ]);
+        print_r($arguments);
 
         return 1;
     }
 
 
-    /**
-     * @return array
-     */
-    public static function controller()
+    public function exec(Route $route, Cors $cors = null, ...$arguments)
     {
-        return [
-            'post'  => [ 'POST', 'test/users' ],
-            'index' => [ 'GET', 'test/users' ],
+        print_r(__METHOD__);
+        print_r([ $route, $cors ]);
+        print_r($arguments);
 
-            'get'    => [ 'GET', 'test/users/{id}' ],
-            'put'    => [ 'PUT', 'test/users/{id}' ],
-            'delete' => [ 'DELETE', 'test/users/{id}' ],
+        return 1;
+    }
 
-            'login'     => [ 'GET', 'test/login' ],
-            'loginPost' => [ 'POST', 'test/login' ],
-        ];
+    public function dump(Route $route, Cors $cors = null, ...$arguments)
+    {
+        print_r(__METHOD__);
+        print_r([ $route, $cors ]);
+        print_r($arguments);
+
+        return 1;
     }
 }

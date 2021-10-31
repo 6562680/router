@@ -492,7 +492,7 @@ class RouterContainer implements RouterContainerInterface
                     $paramsString[ $rpName ] = $instance;
                     array_unshift($paramsInt, null);
 
-                } else {
+                } elseif (! $rp->isVariadic()) {
                     $paramsAutowired[ $i ] = null;
                 }
             }
