@@ -15,7 +15,7 @@ class TestUserController
 {
     public function get(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r(__METHOD__);
+        print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
         print_r($arguments);
 
@@ -24,7 +24,7 @@ class TestUserController
 
     public function post(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r(__METHOD__);
+        print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
         print_r($arguments);
 
@@ -33,7 +33,7 @@ class TestUserController
 
     public function put(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r(__METHOD__);
+        print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
         print_r($arguments);
 
@@ -42,7 +42,7 @@ class TestUserController
 
     public function delete(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r(__METHOD__);
+        print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
         print_r($arguments);
 
@@ -52,7 +52,7 @@ class TestUserController
 
     public function index(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r(__METHOD__);
+        print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
         print_r($arguments);
 
@@ -62,7 +62,7 @@ class TestUserController
 
     public function login(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r(__METHOD__);
+        print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
         print_r($arguments);
 
@@ -71,7 +71,7 @@ class TestUserController
 
     public function loginPost(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r(__METHOD__);
+        print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
         print_r($arguments);
 
@@ -81,7 +81,7 @@ class TestUserController
 
     public function exec(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r(__METHOD__);
+        print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
         print_r($arguments);
 
@@ -90,7 +90,7 @@ class TestUserController
 
     public function dump(Route $route, Cors $cors = null, ...$arguments)
     {
-        print_r(__METHOD__);
+        print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
         print_r($arguments);
 

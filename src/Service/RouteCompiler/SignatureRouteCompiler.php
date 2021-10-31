@@ -46,9 +46,9 @@ class SignatureRouteCompiler implements RouteCompilerInterface
 
         $options = [];
         foreach ( $matches as $match ) {
-            [ $definition, $description ] = explode('|', $match, 2) + [ '', null ];
+            [ $definition, $description ] = explode('>', $match, 2) + [ '', null ];
 
-            $definition = trim($definition);
+            $definition = ltrim(trim($definition), '-');
             $description = isset($description)
                 ? trim($description)
                 : null;
