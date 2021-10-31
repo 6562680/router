@@ -94,12 +94,12 @@ $router->remember(function () use ($router) {
                         ->group(function () use ($manager) {
                             $manager->cli([
                                 'users:dump',
-                                '{users* : Comma separated list of user ids}',
+                                '{--users+ > Comma separated list of user ids}',
                             ], 'TestUserController@dump')->name('dump');
 
                             $manager->cli([
                                 'users:load',
-                                '{--force|f : Forces non-interactive mode}',
+                                '{--force|f > Forces non-interactive mode}',
                             ], 'TestUserController@load')->name('load');
                         });
                 });
