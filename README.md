@@ -17,13 +17,14 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 
 $configuration = ( new Configuration() )
-    // ->setCache(null) // Psr\SimpleCache\CacheInterface
     // ->setContainer(null) // \Psr\Container\ContainerInterface
-    // ->setRouterFactory(null) // \Gzhegow\Router\RouterFactoryInterface
-    // ->setRouteCompiler(null) // \Gzhegow\Router\Service\RouteCompiler\RouteCompilerInterface
-    // ->setRouteLoader(null) // \Gzhegow\Router\Service\RouteLoader\RouteLoaderInterface
-    // ->setActionProcessor(null) // \Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface
-    // ->setCorsMiddleware(null) // mixed
+    // ->setCache(null) // Psr\SimpleCache\CacheInterface|callable
+    // ->setRouteCompiler(null) // \Gzhegow\Router\Service\RouteCompiler\RouteCompilerInterface|callable
+    // ->setRouteLoader(null) // \Gzhegow\Router\Service\RouteLoader\RouteLoaderInterface|callable
+    // ->setActionProcessor(null) // \Gzhegow\Router\Service\ActionProcessor\ActionProcessorInterface|callable
+    // ->setRouteCollection(null) // \Gzhegow\Router\Domain\Route\RouteCollection|callable
+    // ->setMiddlewareCollection(null) // \Gzhegow\Router\Domain\Configuration\MiddlewareCollection|callable
+    // ->setPatternCollection(null) // \Gzhegow\Router\Domain\Configuration\PatternCollection|callable    
 ;
 
 $router = new Router($configuration);
