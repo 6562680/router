@@ -499,16 +499,14 @@ class RouterContainer implements RouterContainerInterface
                 if (isset($paramsString[ $rpTypeName ])) {
                     $instance = $paramsString[ $rpTypeName ];
 
-                } else {
-                    if (isset($paramsInt[ $i ])
-                        && $paramsInt[ $i ] instanceof $rpTypeName
-                    ) {
-                        $instance = $paramsInt[ $i ];
-                        $paramsInt[ $i ] = null;
+                } elseif (isset($paramsInt[ $i ])
+                    && $paramsInt[ $i ] instanceof $rpTypeName
+                ) {
+                    $instance = $paramsInt[ $i ];
+                    $paramsInt[ $i ] = null;
 
-                    } elseif ($this->has($rpTypeName)) {
-                        $instance = $this->get($rpTypeName);
-                    }
+                } elseif ($this->has($rpTypeName)) {
+                    $instance = $this->get($rpTypeName);
                 }
 
                 $paramsAutowired[ $i ] = $instance;

@@ -111,8 +111,8 @@ $router->remember(function () use ($router) {
                                 // dir:=number   : option with type constraint of number
                                 // dir:=string   : option with type constraint of string
                                 ->signature([
-                                    '{--users+ > Users: Comma separated list}',
-                                    '{--force|f > Forces non-interactive mode}',
+                                    0 => '{--users+ > Users: Comma separated list}',
+                                    1 => '{--force|f > Forces non-interactive mode}',
                                 ])
                                 ->name('dump');
 
