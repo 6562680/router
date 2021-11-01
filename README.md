@@ -186,7 +186,7 @@ print(var_export($route, 1) . PHP_EOL);
  *    )),
  *    'signature' => NULL,
  *    'name' => 'api.users.get',
- *    'description' => NULL,
+ *    'description' => 'Am a description!',
  *    'bindings' => array(
  *      'id' => '1',
  *      'key' => 'value',
