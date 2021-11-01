@@ -3,17 +3,14 @@
 
 namespace Gzhegow\Router\Service\ActionProcessor;
 
-use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\RouterContainerInterface;
-use Gzhegow\Router\Domain\Route\RouteAwareInterface;
 
 
 /**
  * AsteriskActionProcessor
  */
 class AsteriskActionProcessor implements
-    ActionProcessorInterface,
-    RouteAwareInterface
+    ActionProcessorInterface
 {
     /**
      * @var RouterContainerInterface
@@ -40,30 +37,19 @@ class AsteriskActionProcessor implements
      */
     public function processAction($action, ...$arguments)
     {
-        $route = $this->getRoute();
+        $route = $this->routerContainer->getRoute();
+
+        $args = func_get_args();
+        array_shift($args); // drop action
+        $args = $args + $route->getBindings();
 
         [ $actionClass, $actionMethod ] = explode('@', $action);
 
-        $actionObject = $this->routerContainer->new($actionClass, $route->getBindings());
+        $actionObject = $this->routerContainer->new($actionClass, $args);
 
-        $callable = [ $actionObject, $actionMethod ];
-
-        $args = func_get_args();
-        array_shift($args);
-        $args = $args + $route->getBindings();
-
-        $result = $this->routerContainer->call(null, $callable, $args);
+        $result = $this->routerContainer->call(null, [ $actionObject, $actionMethod ], $args);
 
         return $result;
-    }
-
-
-    /**
-     * @return Route
-     */
-    public function getRoute() : Route
-    {
-        return $this->routerContainer->get(Route::class);
     }
 
 

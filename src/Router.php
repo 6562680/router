@@ -139,6 +139,10 @@ class Router implements RouterInterface
 
             end($middlewares);
             while ( $middleware = current($middlewares) ) {
+                $middleware = null
+                    ?? $middlewareCollection->hasMiddlewareAlias($middleware)
+                    ?? $middleware;
+
                 $middleware = new GenericMiddleware($middleware,
                     $this->routerContainer->getActionProcessor()
                 );

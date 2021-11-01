@@ -72,7 +72,7 @@ class HttpRouteSpecification implements RouteSpecificationInterface
             );
         }
 
-        $routes = [];
+        $routes = null;
 
         $rows = $routeCollection->getRoutes();
 
@@ -82,10 +82,9 @@ class HttpRouteSpecification implements RouteSpecificationInterface
             foreach ( $index[ $this->httpMethod ] ?? [] as $id => $bool ) {
                 $routes[] = $rows[ $id ];
             }
-
-        } else {
-            $routes = $rows;
         }
+
+        $routes = $routes ?? $rows;
 
         return $routes;
     }

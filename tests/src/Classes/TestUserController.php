@@ -17,7 +17,7 @@ class TestUserController
     {
         print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
-        print_r($arguments);
+        print_r(count($arguments) . PHP_EOL);
 
         return 1;
     }
@@ -26,7 +26,7 @@ class TestUserController
     {
         print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
-        print_r($arguments);
+        print_r(count($arguments) . PHP_EOL);
 
         return 1;
     }
@@ -35,7 +35,7 @@ class TestUserController
     {
         print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
-        print_r($arguments);
+        print_r(count($arguments) . PHP_EOL);
 
         return 1;
     }
@@ -44,7 +44,7 @@ class TestUserController
     {
         print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
-        print_r($arguments);
+        print_r(count($arguments) . PHP_EOL);
 
         return 1;
     }
@@ -54,7 +54,7 @@ class TestUserController
     {
         print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
-        print_r($arguments);
+        print_r(count($arguments) . PHP_EOL);
 
         return 1;
     }
@@ -64,7 +64,7 @@ class TestUserController
     {
         print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
-        print_r($arguments);
+        print_r(count($arguments) . PHP_EOL);
 
         return 1;
     }
@@ -73,7 +73,7 @@ class TestUserController
     {
         print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
-        print_r($arguments);
+        print_r(count($arguments) . PHP_EOL);
 
         return 1;
     }
@@ -83,7 +83,7 @@ class TestUserController
     {
         print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
-        print_r($arguments);
+        print_r(count($arguments) . PHP_EOL);
 
         return 1;
     }
@@ -92,7 +92,16 @@ class TestUserController
     {
         print_r(__METHOD__ . PHP_EOL);
         print_r([ $route, $cors ]);
-        print_r($arguments);
+        print_r(count($arguments) . PHP_EOL);
+
+        return 1;
+    }
+
+    public function do(Route $route, Cors $cors = null, ...$arguments)
+    {
+        print_r(__METHOD__ . PHP_EOL);
+        print_r([ $route, $cors ]);
+        print_r(count($arguments) . PHP_EOL);
 
         return 1;
     }

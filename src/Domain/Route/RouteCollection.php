@@ -381,10 +381,14 @@ class RouteCollection
 
         $matches = [];
         foreach ( $routes as $idx => $route ) {
-            if (! $routeSpecification || $routeSpecification->match($route)) {
+            $routeMatched = $routeSpecification
+                ? $routeSpecification->match($route)
+                : $route;
+
+            if (null !== $routeMatched) {
                 if ($offset-- > 0) continue;
 
-                $matches[ $idx ] = $route;
+                $matches[ $idx ] = $routeMatched;
 
                 if (--$limit <= 0) break;
             }

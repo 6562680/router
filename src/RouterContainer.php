@@ -4,6 +4,8 @@
 namespace Gzhegow\Router;
 
 use Gzhegow\Router\Vendor\Helper;
+use Gzhegow\Router\Domain\Cors\Cors;
+use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\Exceptions\RuntimeException;
 use Gzhegow\Router\Domain\Route\RouteCollection;
 use Gzhegow\Router\Domain\Configuration\Configuration;
@@ -277,6 +279,23 @@ class RouterContainer implements RouterContainerInterface
 
 
     /**
+     * @return null|Route
+     */
+    public function getRoute() : ?Route
+    {
+        return $this->get(Route::class);
+    }
+
+    /**
+     * @return null|Cors
+     */
+    public function getCors() : ?Cors
+    {
+        return $this->get(Cors::class);
+    }
+
+
+    /**
      * @param string $id
      *
      * @return mixed
@@ -455,46 +474,52 @@ class RouterContainer implements RouterContainerInterface
         foreach ( $reflectionFunction->getParameters() as $i => $rp ) {
             $rpName = $rp->getName();
 
-            if (isset($paramsInt[ $i ])) {
-                $paramsAutowired[ $i ] = $paramsInt[ $i ];
-                $paramsInt[ $i ] = null;
+            $rpTypeName = null;
+            $rpType = $rp->getType();
+            if ($rpType && ! $this->reflectionTypeIsBuiltin($rpType)) {
+                if ($this->reflectionTypeIsNamed($rpType)
+                    && ( 0
+                        || class_exists($rpType->getName())
+                        || interface_exists($rpType->getName())
+                    )
+                ) {
+                    $rpTypeName = $rpType->getName();
+                }
+            }
 
-            } else {
-                $rpTypeName = null;
-                $rpType = $rp->getType();
-                if ($rpType && ! $this->reflectionTypeIsBuiltin($rpType)) {
-                    if ($this->reflectionTypeIsNamed($rpType)
-                        && ( 0
-                            || class_exists($rpType->getName())
-                            || interface_exists($rpType->getName())
-                        )
+            if (isset($paramsString[ $paramKey = '$' . $rpName ])) {
+                $value = $paramsString[ $paramKey ];
+
+                $paramsAutowired[ $i ] = $value;
+                array_unshift($paramsInt, null);
+
+            } elseif ($rpTypeName) {
+                $instance = null;
+
+                if (isset($paramsString[ $rpTypeName ])) {
+                    $instance = $paramsString[ $rpTypeName ];
+
+                } else {
+                    if (isset($paramsInt[ $i ])
+                        && $paramsInt[ $i ] instanceof $rpTypeName
                     ) {
-                        $rpTypeName = $rpType->getName();
+                        $instance = $paramsInt[ $i ];
+                        $paramsInt[ $i ] = null;
+
+                    } elseif ($this->has($rpTypeName)) {
+                        $instance = $this->get($rpTypeName);
                     }
                 }
 
-                if ($rpTypeName && isset($paramsString[ $rpTypeName ])) {
-                    $value = $paramsString[ $rpTypeName ];
+                $paramsAutowired[ $i ] = $instance;
+                array_unshift($paramsInt, null);
 
-                    $paramsAutowired[ $i ] = $value;
-                    array_unshift($paramsInt, null);
+            } elseif (isset($paramsInt[ $i ])) {
+                $paramsAutowired[ $i ] = $paramsInt[ $i ];
+                $paramsInt[ $i ] = null;
 
-                } elseif (isset($paramsString[ $paramKey = '$' . $rpName ])) {
-                    $value = $paramsString[ $paramKey ];
-
-                    $paramsAutowired[ $i ] = $value;
-                    array_unshift($paramsInt, null);
-
-                } elseif ($rpTypeName && $this->has($rpTypeName)) {
-                    $instance = $this->get($rpTypeName);
-
-                    $paramsAutowired[ $i ] = $instance;
-                    $paramsString[ $rpName ] = $instance;
-                    array_unshift($paramsInt, null);
-
-                } elseif (! $rp->isVariadic()) {
-                    $paramsAutowired[ $i ] = null;
-                }
+            } elseif (! $rp->isVariadic()) {
+                $paramsAutowired[ $i ] = null;
             }
         }
 

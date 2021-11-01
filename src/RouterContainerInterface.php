@@ -2,7 +2,9 @@
 
 namespace Gzhegow\Router;
 
+use Gzhegow\Router\Domain\Cors\Cors;
 use Psr\Container\ContainerInterface;
+use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\Domain\Route\RouteCollection;
 use Gzhegow\Router\Domain\Configuration\PatternCollection;
 use Gzhegow\Router\Service\RouteLoader\RouteLoaderInterface;
@@ -54,6 +56,17 @@ interface RouterContainerInterface extends ContainerInterface
      * @return PatternCollection
      */
     public function getPatternCollection() : PatternCollection;
+
+
+    /**
+     * @return null|Route
+     */
+    public function getRoute() : ?Route;
+
+    /**
+     * @return null|Cors
+     */
+    public function getCors() : ?Cors;
 
 
     /**

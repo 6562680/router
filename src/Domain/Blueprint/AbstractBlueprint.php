@@ -3,6 +3,7 @@
 namespace Gzhegow\Router\Domain\Blueprint;
 
 use Gzhegow\Router\Domain\Cors\CorsBuilder;
+use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 
 
 /**
@@ -122,19 +123,46 @@ abstract class AbstractBlueprint
      */
     public function endpoint(?string $endpoint)
     {
+        if (preg_match('/\s/', $endpoint)) {
+            throw new InvalidArgumentException(
+                [ 'Invalid Endpoint: %s', $endpoint ]
+            );
+        }
+
         $this->endpoint = $endpoint;
 
         return $this;
     }
 
     /**
-     * @param null|string $signature
+     * @param null|string|string[] $signature
      *
      * @return static
      */
-    public function signature(?string $signature)
+    public function signature($signature)
     {
-        $this->signature = $signature;
+        $value = $signature;
+
+        if (null !== $signature) {
+            $signature = is_iterable($signature)
+                ? $signature
+                : [ $signature ];
+
+            $array = [];
+            foreach ( $signature as $s ) {
+                if (! is_string($s)) {
+                    throw new InvalidArgumentException(
+                        [ 'Invalid Signature: %s', $signature ]
+                    );
+                }
+
+                $array[] = trim($s);
+            }
+
+            $value = implode(' ', $array);
+        }
+
+        $this->signature = $value;
 
         return $this;
     }

@@ -3,17 +3,14 @@
 
 namespace Gzhegow\Router\Service\ActionProcessor;
 
-use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\RouterContainerInterface;
-use Gzhegow\Router\Domain\Route\RouteAwareInterface;
 
 
 /**
  * CallableActionProcessor
  */
 class CallableActionProcessor implements
-    ActionProcessorInterface,
-    RouteAwareInterface
+    ActionProcessorInterface
 {
     /**
      * @var RouterContainerInterface
@@ -40,24 +37,15 @@ class CallableActionProcessor implements
      */
     public function processAction($action, ...$arguments)
     {
-        $route = $this->getRoute();
+        $route = $this->routerContainer->getRoute();
 
         $args = func_get_args();
-        array_shift($args);
+        array_shift($args); // drop action
         $args = $args + $route->getBindings();
 
         $result = $this->routerContainer->call(null, $action, $args);
 
         return $result;
-    }
-
-
-    /**
-     * @return Route
-     */
-    public function getRoute() : Route
-    {
-        return $this->routerContainer->get(Route::class);
     }
 
 

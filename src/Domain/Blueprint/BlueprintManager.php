@@ -405,10 +405,11 @@ class BlueprintManager
         $endpointSignature = implode(' ', $endpointSignature) ?: null;
 
         $blueprint->method($method);
-        $blueprint->endpoint($endpointPath);
-        $blueprint->signature($endpointSignature);
         $blueprint->action($action);
         $blueprint->name($name);
+
+        $blueprint->endpoint($endpointPath);
+        $blueprint->signature($endpointSignature);
 
         return $blueprint;
     }

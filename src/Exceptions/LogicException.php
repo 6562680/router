@@ -37,7 +37,10 @@ class LogicException extends \LogicException
             $replacements[ $i ] = null
                 ?? ( is_null($replacement) ? '{ null }' : null )
                 ?? ( is_scalar($replacement) ? var_export($replacement, 1) : null )
-                ?? ( is_array($replacement) ? '{ Array(' . count($replacement) . ') }' : null )
+                ?? ( is_array($replacement) ? vsprintf('{ Array(%d) : %s }', [
+                    count($replacement),
+                    preg_replace('/\s+/', ' ', trim(var_export($replacement, 1))),
+                ]) : null )
                 ?? ( is_object($replacement) ? '{ ' . get_class($replacement) . ' #' . spl_object_id($replacement) . ' }' : null );
         }
 

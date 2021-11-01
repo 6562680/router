@@ -3,18 +3,15 @@
 
 namespace Gzhegow\Router\Service\ActionProcessor;
 
-use Gzhegow\Router\Domain\Route\Route;
 use Gzhegow\Router\RouterContainerInterface;
 use Gzhegow\Router\Domain\Handler\HandlerInterface;
-use Gzhegow\Router\Domain\Route\RouteAwareInterface;
 
 
 /**
  * HandlerActionProcessor
  */
 class HandlerActionProcessor implements
-    ActionProcessorInterface,
-    RouteAwareInterface
+    ActionProcessorInterface
 {
     /**
      * @var RouterContainerInterface
@@ -41,30 +38,19 @@ class HandlerActionProcessor implements
      */
     public function processAction($action, ...$arguments)
     {
-        $route = $this->getRoute();
-
-        $object = is_object($action)
-            ? $action
-            : $this->routerContainer->new($action, $route->getBindings());
-
-        $callable = [ $object, 'handle' ];
+        $route = $this->routerContainer->getRoute();
 
         $args = func_get_args();
-        array_shift($args);
+        array_shift($args); // drop action
         $args = $args + $route->getBindings();
 
-        $result = $this->routerContainer->call(null, $callable, $args);
+        $actionObject = is_object($action)
+            ? $action
+            : $this->routerContainer->new($action, $args);
+
+        $result = $this->routerContainer->call(null, [ $actionObject, 'handle' ], $args);
 
         return $result;
-    }
-
-
-    /**
-     * @return Route
-     */
-    public function getRoute() : Route
-    {
-        return $this->routerContainer->get(Route::class);
     }
 
 
