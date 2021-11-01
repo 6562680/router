@@ -127,7 +127,7 @@ $router->remember(function () use ($router) {
 // 2. from $_SERVER['HTTP_METHOD']
 $routeSpecification = ( new HttpRouteSpecification() )
     ->httpMethod('GET')
-    ->urlAddress('/api/users/1');
+    ->urlAddress('api/users/1');
 
 // using Specification pattern to search routes inside collection
 $route = $router->match($routeSpecification);

@@ -158,7 +158,7 @@ class HttpRouteSpecification implements RouteSpecificationInterface
      */
     public function urlAddress(string $urlAddress)
     {
-        $urlAddress = ltrim(trim($urlAddress), '/');
+        $urlAddress = trim($urlAddress);
 
         $this->urlAddress = $urlAddress;
 
