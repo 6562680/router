@@ -30,8 +30,7 @@ $configuration = ( new Configuration() )
 $router = new Router($configuration);
 
 // adding custom middleware aliases and middleware groups
-$router
-    ->getMiddlewareCollection()
+$router->getMiddlewareCollection()
     ->addMiddlewareAlias('test', TestMiddleware::class)
     ->addMiddlewareGroup('@api', [])
     ->addMiddlewareGroup('@cli', [
@@ -42,8 +41,7 @@ $router
     ]);
 
 // adding custom wildcards to use inside routes
-$router
-    ->getPatternCollection()
+$router->getPatternCollection()
     ->addPattern('*', '.+')
     ->addPattern('id', '[0-9]+')
     ->addPattern('controller', '(?:[^\/]+\/)+(?=[^\/]+)')
