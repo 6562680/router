@@ -144,9 +144,9 @@ $router->remember(function () use ($router) {
                 });
         });
 
-    $router->load($manager);
+    $routeCollection = $router->collect($manager);
 
-    return $router->getRouteCollection();
+    return $routeCollection;
 });
 
 // you can set custom httpMethod(), for example `CLI` to work with console commands, by default it gets method
