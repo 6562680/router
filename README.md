@@ -111,8 +111,8 @@ $router->remember(function () use ($router) {
                                 // dir:=number   : option with type constraint of number
                                 // dir:=string   : option with type constraint of string
                                 ->signature([
-                                    0 => '{--users+ > Users: Comma separated list}',
-                                    1 => '{--force|f > Forces non-interactive mode}',
+                                    0 => '{--u|users+ > Users (supports multiple values --users=1 --users=2)}',
+                                    1 => '{--f|force > Forces non-interactive mode}',
                                 ])
                                 ->name('dump');
 
@@ -124,7 +124,6 @@ $router->remember(function () use ($router) {
 
                             // using string (space is required while concatenation)
                             $manager->cli('users:do'
-                                . ' ' . '{--users+ > Users: Comma separated list}'
                                 . ' ' . '{--force|f > Forces non-interactive mode}',
                                 'TestUserController@do'
                             )->name('do');
