@@ -100,8 +100,6 @@ class Blueprint extends AbstractBlueprint
 
             'TRACE'   => true,
             'CONNECT' => true,
-
-            'SOCK' => true,
         ];
 
         $value = strtoupper(trim($method));

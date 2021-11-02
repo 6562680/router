@@ -222,19 +222,6 @@ class BlueprintManager
 
 
     /**
-     * @param mixed      $endpoint
-     * @param mixed      $action
-     * @param null|mixed $name
-     *
-     * @return Blueprint
-     */
-    public function sock($endpoint, $action, $name = null) : Blueprint
-    {
-        return $this->route('SOCK', $endpoint, $action, $name);
-    }
-
-
-    /**
      * @param null|string $namespace
      *
      * @return BlueprintGroup

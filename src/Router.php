@@ -62,25 +62,7 @@ class Router implements RouterInterface
      */
     public function load($source)
     {
-        $loader = $this->routerContainer->getRouteLoader();
-
-        if (! $loader->supportsSource($source)) {
-            throw new InvalidArgumentException(
-                [ 'Invalid source: %s', $source ]
-            );
-        }
-
-        $routeCollection = $loader->loadSource($source, $loader);
-
-        if ($routes = $routeCollection->getRoutes()) {
-            $compiler = $this->routerContainer->getRouteCompiler();
-
-            foreach ( $routes as $route ) {
-                if ($compiler->supportsRoute($route)) {
-                    $compiler->compileRoute($route);
-                }
-            }
-        }
+        $routeCollection = $this->collect($source);
 
         $this->routeCollection->merge($routeCollection);
 
@@ -291,6 +273,36 @@ class Router implements RouterInterface
 
 
     /**
+     * @param mixed $source
+     *
+     * @return RouteCollection
+     */
+    public function collect($source) : RouteCollection
+    {
+        $loader = $this->routerContainer->getRouteLoader();
+
+        if (! $loader->supportsSource($source)) {
+            throw new InvalidArgumentException(
+                [ 'Invalid source: %s', $source ]
+            );
+        }
+
+        $routeCollection = $loader->loadSource($source, $loader);
+
+        if ($routes = $routeCollection->getRoutes()) {
+            $compiler = $this->routerContainer->getRouteCompiler();
+
+            foreach ( $routes as $route ) {
+                if ($compiler->supportsRoute($route)) {
+                    $compiler->compileRoute($route);
+                }
+            }
+        }
+
+        return $routeCollection;
+    }
+
+    /**
      * @param \Closure    $closure
      * @param null|int    $ttl
      * @param null|string $key
@@ -303,7 +315,7 @@ class Router implements RouterInterface
 
         $routeCollection = $cache->remember($closure, $ttl, $key);
 
-        $this->setRouteCollection($routeCollection);
+        $this->routeCollection->merge($routeCollection);
 
         return $this;
     }
