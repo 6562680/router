@@ -49,8 +49,6 @@ $router->getPatternCollection()
 
 // using cache if provided
 // won't remember otherwise
-// using cache if provided
-// won't remember otherwise
 $router->remember(function () use ($router) {
     // you can write your custom builder, surprised?
     $manager = new BlueprintManager();
@@ -58,13 +56,13 @@ $router->remember(function () use ($router) {
     $manager
         // specify namespace for all non-callable (string) actions
         ->namespace('Gzhegow\Router\Tests\Classes')
+        // using loader to get routes, for example: \Closure function or filepath or directory path
         ->group(function () use ($manager) {
             $manager
                 // specifying middlewares array (`@cli` middleware group)
                 ->middlewares([ '@cli' ])
                 // name will be joined with no separator
                 ->name('cli.')
-                // using loader to get routes, for example: \Closure function or filepath or directory path
                 ->group(function () use ($manager) {
                     $manager
                         ->name('users.')
