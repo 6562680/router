@@ -5,6 +5,9 @@ namespace Gzhegow\Router\Domain\Endpoint;
 use Gzhegow\Router\Exceptions\Logic\InvalidArgumentException;
 
 
+/**
+ * Endpoint
+ */
 class Endpoint
 {
     /**
@@ -40,8 +43,8 @@ class Endpoint
     public function __serialize() : array
     {
         return array_filter([
-            'endpoint' => $this->value,
-            'regex'    => $this->regex,
+            'value' => $this->value,
+            'regex' => $this->regex,
         ], function ($v) {
             return ! is_null($v);
         });
@@ -52,7 +55,7 @@ class Endpoint
      */
     public function __unserialize(array $data) : void
     {
-        $this->value = $data[ 'endpoint' ] ?? null;
+        $this->value = $data[ 'value' ] ?? null;
         $this->regex = $data[ 'regex' ] ?? null;
     }
 

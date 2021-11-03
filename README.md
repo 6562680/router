@@ -57,41 +57,16 @@ $router->remember(function () use ($router) {
         ->namespace('Gzhegow\Router\Tests\Classes')
         ->group(function () use ($manager) {
             $manager
-                ->middlewares([ '@api' ])
-                ->name('api.')
-                ->endpoint('api')
-                // setting cors headers for all routes in the group
-                ->cors(function (CorsBuilder $cors) {
-                    $cors
-                        ->allowCredentials(true)
-                        ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
-                        ->allowHeaders([ 'Authorization', 'X-(.+)' ])
-                        ->exposeHeaders([ 'X-(.+)' ]);
-                })
+                ->middlewares([ '@cli' ])
+                ->name('cli.')
                 // using loader to get routes, for example: \Closure function or filepath or directory path
                 ->group(function () use ($manager) {
                     $manager
                         ->name('users.')
-                        ->endpoint('/users')
-                        ->group(function () use ($manager) {
-                            $manager->get('', 'TestUserController@index')->name('index');
-                            $manager->post('', 'TestUserController@post')->name('post');
-
-                            $manager->get('{id}', 'TestUserController@get')->name('get');
-                            $manager->put('{id}', 'TestUserController@put')->name('put');
-                            $manager->delete('{id}', 'TestUserController@delete')->name('delete');
-                        });
-                });
-
-            $manager
-                ->middlewares([ '@cli' ])
-                ->name('cli.')
-                ->group(function () use ($manager) {
-                    $manager
-                        ->name('users.')
+                        ->endpoint('users:')
                         ->group(function () use ($manager) {
                             // using builder
-                            $manager->cli('users:dump', 'TestUserController@dump')
+                            $manager->cli('dump', 'TestUserController@dump')
                                 // we use `corneltek/getoptionkit` package so before `&gt;` could be any supported signature
                                 //
                                 // 1) flag option (with boolean value true)
@@ -116,29 +91,58 @@ $router->remember(function () use ($router) {
 
                             // using array (will be imploded by space and split to endpoint/signature)
                             $manager->cli([
-                                0 => 'users:load',
+                                0 => 'load',
                                 1 => '{--force|f > Forces non-interactive mode}',
                             ], 'TestUserController@exec')->name('exec');
 
                             // using string (space is required while concatenation)
-                            $manager->cli('users:do'
+                            $manager->cli('do'
                                 . ' ' . '{--force|f > Forces non-interactive mode}',
                                 'TestUserController@do'
                             )->name('do');
                         });
                 });
-
+                
             $manager
                 ->middlewares([ '@web' ])
                 ->name('web.')
                 ->group(function () use ($manager) {
                     $manager
-                        ->name('users.')
+                        ->name('auth.')
+                        ->endpoint('auth')
                         ->group(function () use ($manager) {
                             $manager->get('login', 'TestUserController@login')->name('login');
                             $manager->post('login', 'TestUserController@loginPost')->name('loginPost');
                         });
-                });
+                });                
+               
+            $manager
+                ->middlewares([ '@api' ])
+                ->name('api.')
+                ->endpoint('api')
+                // setting cors headers for all routes in the group
+                ->cors(function (CorsBuilder $cors) {
+                    $cors
+                        ->allowCredentials(true)
+                        ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
+                        ->allowHeaders([ 'Authorization', 'X-(.+)' ])
+                        ->exposeHeaders([ 'X-(.+)' ]);
+                })
+                ->group(function () use ($manager) {
+                    $manager
+                        ->name('users.')
+                        ->endpoint('/users')
+                        ->group(function () use ($manager) {
+                            $manager->get('', 'TestUserController@index')->name('index');
+                            $manager->post('', 'TestUserController@post')->name('post');
+
+                            $manager->get('{id}', 'TestUserController@get')->name('get');
+                            $manager->put('{id}', 'TestUserController@put')->name('put');
+                            $manager->delete('{id}', 'TestUserController@delete')->name('delete');
+                        });
+                });               
+
+
         });
 
     $routeCollection = $router->collect($manager);

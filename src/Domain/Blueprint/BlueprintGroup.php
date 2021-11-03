@@ -199,9 +199,21 @@ class BlueprintGroup extends AbstractBlueprint
         }
 
         if (null !== $this->endpoint) {
-            $blueprint->endpoint($this->endpoint
-                . '/' . ltrim($blueprint->getEndpoint(), '/')
-            );
+            $endpoint = $this->endpoint . $blueprint->getEndpoint();
+
+            if (preg_match('/[\p{P}\p{S}]/',
+                $separator = substr($endpoint, 0, 1)
+            )) {
+                $endpoint = $this->endpoint
+                    . $separator
+                    . $blueprint->getEndpoint();
+
+                $endpoint = implode($separator, array_filter(
+                    explode($separator, $endpoint)
+                ));
+            }
+
+            $blueprint->endpoint($endpoint);
         }
 
         if (null !== $this->signature) {

@@ -62,6 +62,7 @@ class Signature
         $this->options = $data[ 'options' ] ?? [];
     }
 
+
     /**
      * @return string
      */
@@ -77,6 +78,7 @@ class Signature
     {
         return $this->options;
     }
+
 
     /**
      * Constructor
