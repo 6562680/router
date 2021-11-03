@@ -49,16 +49,20 @@ $router->getPatternCollection()
 
 // using cache if provided
 // won't remember otherwise
+// using cache if provided
+// won't remember otherwise
 $router->remember(function () use ($router) {
+    // you can write your custom builder, surprised?
     $manager = new BlueprintManager();
 
     $manager
+        // specify namespace for all non-callable (string) actions
         ->namespace('Gzhegow\Router\Tests\Classes')
         ->group(function () use ($manager) {
             $manager
-                // specifying middlewares array
+                // specifying middlewares array (`@cli` middleware group)
                 ->middlewares([ '@cli' ])
-                // name will be concatenated
+                // name will be joined with no separator
                 ->name('cli.')
                 // using loader to get routes, for example: \Closure function or filepath or directory path
                 ->group(function () use ($manager) {
@@ -91,7 +95,7 @@ $router->remember(function () use ($router) {
                                 ])
                                 ->name('dump');
 
-                            // using array (will be imploded by space and split to endpoint/signature)
+                            // using array (will be imploded using space)
                             $manager->cli([
                                 0 => 'load',
                                 1 => '{--force|f > Forces non-interactive mode}',
@@ -102,20 +106,6 @@ $router->remember(function () use ($router) {
                                 . ' ' . '{--force|f > Forces non-interactive mode}',
                                 'TestUserController@do'
                             )->name('do');
-                        });
-                });
-
-            $manager
-                ->middlewares([ '@web' ])
-                ->name('web.')
-                ->group(function () use ($manager) {
-                    $manager
-                        ->name('auth.')
-                        // remember? first symbol will be used as separator between parts
-                        ->endpoint('/auth')
-                        ->group(function () use ($manager) {
-                            $manager->get('login', 'TestUserController@login')->name('login');
-                            $manager->post('login', 'TestUserController@loginPost')->name('loginPost');
                         });
                 });
 
@@ -135,21 +125,37 @@ $router->remember(function () use ($router) {
                 ->group(function () use ($manager) {
                     $manager
                         ->name('users.')
+                        // remember? first symbol will be used as separator between parts
                         ->endpoint('/users')
                         ->group(function () use ($manager) {
                             $manager->get('', 'TestUserController@index')->name('index');
                             $manager->post('', 'TestUserController@post')->name('post');
 
-                            // use named placeholders! it will be compiled to regular expression
-                            $manager->get('{id}', 'TestUserController@get')->name('get')
-                                ->description('Am a description!');
-
                             $manager->put('{id}', 'TestUserController@put')->name('put');
                             $manager->delete('{id}', 'TestUserController@delete')->name('delete');
+
+                            // use named placeholders! it will be compiled to regular expression
+                            $manager->get('{id}', 'TestUserController@get')
+                                ->name('get')
+                                ->description('Am a description!');
+                        });
+                });
+
+            $manager
+                ->middlewares([ '@web' ])
+                ->name('web.')
+                ->group(function () use ($manager) {
+                    $manager
+                        ->name('auth.')
+                        ->endpoint('/auth')
+                        ->group(function () use ($manager) {
+                            $manager->get('login', 'TestUserController@login')->name('login');
+                            $manager->post('login', 'TestUserController@loginPost')->name('loginPost');
                         });
                 });
         });
 
+    // should return route collection (for cache)
     $routeCollection = $router->collect($manager);
 
     return $routeCollection;
