@@ -47,25 +47,27 @@ $router->getPatternCollection()
     ->addPattern('controller', '(?:[^\/]+\/)+(?=[^\/]+)')
     ->addPattern('action', '[^\/]+(?=|$)');
 
-// using cache, if provided in Configuration
-// otherwise won't remember
+// using cache if provided
+// won't remember otherwise
 $router->remember(function () use ($router) {
     $manager = new BlueprintManager();
 
     $manager
-        // setting namespace for all route actions that are strings and not callables
         ->namespace('Gzhegow\Router\Tests\Classes')
         ->group(function () use ($manager) {
             $manager
+                // specifying middlewares array
                 ->middlewares([ '@cli' ])
+                // name will be concatenated
                 ->name('cli.')
                 // using loader to get routes, for example: \Closure function or filepath or directory path
                 ->group(function () use ($manager) {
                     $manager
                         ->name('users.')
-                        ->endpoint('users:')
+                        // if first symbol is a special character [\p{P}\p{S}] - it will be used for concatenation
+                        ->endpoint(':users')
                         ->group(function () use ($manager) {
-                            // using builder
+                            // collect your console routes with web routes in single cached collection! why not?
                             $manager->cli('dump', 'TestUserController@dump')
                                 // we use `corneltek/getoptionkit` package so before `&gt;` could be any supported signature
                                 //
@@ -102,28 +104,30 @@ $router->remember(function () use ($router) {
                             )->name('do');
                         });
                 });
-                
+
             $manager
                 ->middlewares([ '@web' ])
                 ->name('web.')
                 ->group(function () use ($manager) {
                     $manager
                         ->name('auth.')
-                        ->endpoint('auth')
+                        // remember? first symbol will be used as separator between parts
+                        ->endpoint('/auth')
                         ->group(function () use ($manager) {
                             $manager->get('login', 'TestUserController@login')->name('login');
                             $manager->post('login', 'TestUserController@loginPost')->name('loginPost');
                         });
-                });                
-               
+                });
+
             $manager
                 ->middlewares([ '@api' ])
                 ->name('api.')
-                ->endpoint('api')
-                // setting cors headers for all routes in the group
+                ->endpoint('/api')
                 ->cors(function (CorsBuilder $cors) {
+                    // define cors configuration (preflight middleware will be added for you using compiler)
                     $cors
                         ->allowCredentials(true)
+                        // yes, we allow regex as a benefit
                         ->allowOrigins([ 'https:\/\/(.+)\.test\.loc' ])
                         ->allowHeaders([ 'Authorization', 'X-(.+)' ])
                         ->exposeHeaders([ 'X-(.+)' ]);
@@ -136,13 +140,14 @@ $router->remember(function () use ($router) {
                             $manager->get('', 'TestUserController@index')->name('index');
                             $manager->post('', 'TestUserController@post')->name('post');
 
-                            $manager->get('{id}', 'TestUserController@get')->name('get');
+                            // use named placeholders! it will be compiled to regular expression
+                            $manager->get('{id}', 'TestUserController@get')->name('get')
+                                ->description('Am a description!');
+
                             $manager->put('{id}', 'TestUserController@put')->name('put');
                             $manager->delete('{id}', 'TestUserController@delete')->name('delete');
                         });
-                });               
-
-
+                });
         });
 
     $routeCollection = $router->collect($manager);
