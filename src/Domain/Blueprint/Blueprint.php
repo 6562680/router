@@ -28,13 +28,22 @@ class Blueprint extends AbstractBlueprint
      */
     public function build() : Route
     {
-        $command = [];
-        $command[] = $this->getEndpoint();
-        $command[] = $this->getSignature();
-        $command = implode(' ', array_filter($command, 'strlen'));
+        $separator = '';
+        $endpoint = $this->getEndpoint();
+        if (preg_match('/[\p{P}\p{S}]/u', substr($endpoint, 0, 1), $m)) {
+            $endpoint = str_replace($separator = $m[ 0 ], "\0", $endpoint);
+        }
 
-        $compiledRoute = new Route($this->getMethod(),
-            $command, $this->getAction()
+        $endpoint = implode($separator, array_filter(
+            explode("\0", $endpoint), 'strlen'
+        ));
+
+        $command = rtrim($endpoint . ' ' . $this->getSignature());
+
+        $compiledRoute = new Route(
+            $this->getMethod(),
+            $command,
+            $this->getAction()
         );
 
         if ($value = $this->getName()) {

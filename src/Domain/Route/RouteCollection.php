@@ -222,7 +222,7 @@ class RouteCollection
         $indexMethod = $routeMethod;
         $indexEndpoint = $routeEndpoint->getValue();
 
-        $uniqMethodEndpoint = $indexMethod . '.' . $indexEndpoint;
+        $uniqMethodEndpoint = $indexMethod . "\0" . $indexEndpoint;
         $uniqName = $routeName;
 
         if (isset($this->routesIndex[ 'method.endpoint' ][ $uniqMethodEndpoint ])) {
@@ -273,7 +273,7 @@ class RouteCollection
             $corsArray
         ));
 
-        $uniqRouteMethodEndpoint = $routeMethod . '.' . $routeEndpoint->getValue();
+        $uniqRouteMethodEndpoint = $routeMethod . "\0" . $routeEndpoint->getValue();
 
         if (isset($this->corsUnique[ '.route' ][ $uniqRouteMethodEndpoint ])) {
             throw new OverflowException(
