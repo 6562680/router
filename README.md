@@ -56,7 +56,10 @@ $router->remember(function () use ($router) {
     $manager
         // specify namespace for all non-callable (string) actions
         ->namespace('Gzhegow\Router\Tests\Classes')
-        // using loader to get routes, for example: \Closure function or filepath or directory path
+        // there we use loader to get routes
+        // example: filepath / directory path / \Closure function / anything you implemented
+        // ->group(__DIR__ . '/file.php')
+        // ->group(__DIR__ . '/directory')
         ->group(function () use ($manager) {
             $manager
                 // specifying middlewares array (`@cli` middleware group)
