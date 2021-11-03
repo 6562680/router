@@ -98,12 +98,12 @@ $router->remember(function () use ($router) {
                             // using array (will be imploded using space)
                             $manager->cli([
                                 0 => 'load',
-                                1 => '{--force|f > Forces non-interactive mode}',
+                                1 => '{--f|force > Forces non-interactive mode}',
                             ], 'TestUserController@exec')->name('exec');
 
                             // using string (space is required while concatenation)
                             $manager->cli('do'
-                                . ' ' . '{--force|f > Forces non-interactive mode}',
+                                . ' ' . '{--f|force > Forces non-interactive mode}',
                                 'TestUserController@do'
                             )->name('do');
                         });
